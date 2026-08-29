@@ -1,0 +1,6 @@
+{
+  "name": "Kashmir Stay Hotel - AI Receptionist",
+  "description": "Polite and professional AI Receptionist for Kashmir Stay Hotel, answering guest inquiries about rooms, facilities, dining, booking, pricing, and services.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
