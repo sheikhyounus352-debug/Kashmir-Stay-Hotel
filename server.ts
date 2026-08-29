@@ -416,8 +416,10 @@ app.post("/api/chat", async (req, res) => {
 
     // If greeting and no info yet, give a polite greeting without failing
     if (isSimpleGreeting && !hasAnyKnowledge) {
+      const mgmt = getHotelManagementData();
+      const welcomeTarget = mgmt.profile.isVerified && mgmt.profile.hotelName?.trim() ? ` to ${mgmt.profile.hotelName.trim()}` : "";
       return res.json({
-        text: "Warm greetings and welcome to Kashmir Stay Hotel! 🌸 How may I assist you today? Please feel free to ask any question once our verified hotel records have been updated.",
+        text: `Warm greetings and welcome${welcomeTarget}! 🌸 How may I assist you today? Please feel free to ask any question once our verified hotel records have been updated.`,
         timestamp: new Date().toISOString(),
         groundingStatus: 'greeting',
       });

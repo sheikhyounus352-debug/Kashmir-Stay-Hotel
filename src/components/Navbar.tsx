@@ -10,8 +10,7 @@ import {
   FileCheck,
   LayoutDashboard,
   MessageSquareQuote,
-  SlidersHorizontal,
-  Mail
+  SlidersHorizontal
 } from 'lucide-react';
 import { VerifiedHotelKnowledge, HotelManagementData } from '../types';
 
@@ -19,22 +18,18 @@ interface NavbarProps {
   autoSpeak: boolean;
   onToggleAutoSpeak: () => void;
   onOpenKnowledgeManager: () => void;
-  onOpenGmail: () => void;
   knowledge: VerifiedHotelKnowledge;
   activeView: 'receptionist' | 'management';
   onChangeView: (view: 'receptionist' | 'management') => void;
-  hasGmailAuth?: boolean;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
   autoSpeak,
   onToggleAutoSpeak,
   onOpenKnowledgeManager,
-  onOpenGmail,
   knowledge,
   activeView,
   onChangeView,
-  hasGmailAuth = false,
 }) => {
   const hasKnowledge = Object.entries(knowledge).some(
     ([key, val]) => key !== 'lastUpdated' && typeof val === 'string' && val.trim().length > 0
@@ -123,22 +118,6 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {/* Actions */}
         <div className="flex items-center gap-2 sm:gap-3">
-          {/* Gmail Communications Center Button */}
-          <button
-            id="open-gmail-btn"
-            onClick={onOpenGmail}
-            title="Open Kashmir Stay Hotel Gmail Communications"
-            className="px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all bg-emerald-950/80 hover:bg-emerald-900 text-stone-200 border border-emerald-800 hover:border-amber-400/60 shadow-sm cursor-pointer"
-          >
-            <div className="relative">
-              <Mail className="w-3.5 h-3.5 text-amber-400" />
-              {hasGmailAuth && (
-                <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-emerald-400 border border-emerald-950"></span>
-              )}
-            </div>
-            <span className="hidden sm:inline">Gmail</span>
-          </button>
-
           {/* Voice Narration Toggle (only in Receptionist view) */}
           {activeView === 'receptionist' && (
             <button

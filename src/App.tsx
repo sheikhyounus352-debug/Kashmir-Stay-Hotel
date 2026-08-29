@@ -21,8 +21,6 @@ import { ChatMessageBubble } from './components/ChatMessageBubble';
 import { QuickPrompts } from './components/QuickPrompts';
 import { VerifiedKnowledgeModal } from './components/VerifiedKnowledgeModal';
 import { HotelManagementDashboard } from './components/HotelManagementDashboard';
-import { GmailManager } from './components/GmailManager';
-import { initAuth } from './services/gmailAuth';
 import { 
   ChatMessage, 
   VerifiedHotelKnowledge, 
@@ -55,27 +53,9 @@ export default function App() {
   const [knowledge, setKnowledge] = useState<VerifiedHotelKnowledge>(EMPTY_HOTEL_KNOWLEDGE);
   const [managementData, setManagementData] = useState<HotelManagementData>(EMPTY_HOTEL_MANAGEMENT_DATA);
 
-  // Gmail Workspace Integration State
-  const [isGmailOpen, setIsGmailOpen] = useState<boolean>(false);
-  const [gmailInquiryPayload, setGmailInquiryPayload] = useState<BookingInquirySummary | null>(null);
-  const [hasGmailAuth, setHasGmailAuth] = useState<boolean>(false);
-
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const recognitionRef = useRef<any>(null);
-
-  // Initialize Gmail Auth listener to show account connectivity status
-  useEffect(() => {
-    const unsub = initAuth(
-      (_user, token) => {
-        setHasGmailAuth(Boolean(token));
-      },
-      () => {
-        setHasGmailAuth(false);
-      }
-    );
-    return () => unsub();
-  }, []);
 
   // Auto-scroll to latest message
   const scrollToBottom = () => {
@@ -306,14 +286,9 @@ export default function App() {
           setAutoSpeak(!autoSpeak);
         }}
         onOpenKnowledgeManager={() => setActiveView('management')}
-        onOpenGmail={() => {
-          setGmailInquiryPayload(null);
-          setIsGmailOpen(true);
-        }}
         knowledge={knowledge}
         activeView={activeView}
         onChangeView={(view) => setActiveView(view)}
-        hasGmailAuth={hasGmailAuth}
       />
 
       {/* VIEW: HOTEL MANAGEMENT DASHBOARD */}
@@ -322,10 +297,6 @@ export default function App() {
           data={managementData}
           onSave={handleSaveManagementData}
           onReturnToReceptionist={() => setActiveView('receptionist')}
-          onOpenGmail={() => {
-            setGmailInquiryPayload(null);
-            setIsGmailOpen(true);
-          }}
         />
       ) : (
         /* VIEW: AI RECEPTIONIST (GUEST VIEW) */
@@ -386,10 +357,6 @@ export default function App() {
                   message={message} 
                   onConfirmInquiry={handleConfirmInquiry}
                   onModifyInquiry={handleModifyInquiry}
-                  onEmailInquiry={(summary) => {
-                    setGmailInquiryPayload(summary);
-                    setIsGmailOpen(true);
-                  }}
                 />
               ))}
 
@@ -509,17 +476,6 @@ export default function App() {
         onClose={() => setIsKnowledgeModalOpen(false)}
         knowledge={knowledge}
         onSaveKnowledge={handleSaveKnowledge}
-      />
-
-      {/* Gmail Communications Center Modal */}
-      <GmailManager
-        isOpen={isGmailOpen}
-        onClose={() => {
-          setIsGmailOpen(false);
-          setGmailInquiryPayload(null);
-        }}
-        initialInquiryToSend={gmailInquiryPayload}
-        hotelEmail={managementData.profile.email || managementData.contacts.bookingContact || 'info@kashmirstayhotel.com'}
       />
     </div>
   );

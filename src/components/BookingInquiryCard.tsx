@@ -16,7 +16,6 @@ interface BookingInquiryCardProps {
   summary: BookingInquirySummary;
   onConfirmInquiry?: () => void;
   onModifyInquiry?: () => void;
-  onEmailInquiry?: () => void;
   isConfirmed?: boolean;
 }
 
@@ -24,7 +23,6 @@ export const BookingInquiryCard: React.FC<BookingInquiryCardProps> = ({
   summary,
   onConfirmInquiry,
   onModifyInquiry,
-  onEmailInquiry,
   isConfirmed = false,
 }) => {
   const confirmed = isConfirmed || summary.isConfirmedByGuest || summary.status === 'guest_confirmed';
@@ -147,19 +145,6 @@ export const BookingInquiryCard: React.FC<BookingInquiryCardProps> = ({
             >
               <CheckCircle2 className="w-3.5 h-3.5 text-amber-300" />
               <span>Confirm Inquiry Details</span>
-            </button>
-          )}
-
-          {onEmailInquiry && (
-            <button
-              id="email-inquiry-gmail-btn"
-              type="button"
-              onClick={onEmailInquiry}
-              className="w-full sm:w-auto py-2 px-3 rounded-lg bg-emerald-950 hover:bg-emerald-900 text-emerald-300 hover:text-white font-semibold text-xs transition-colors cursor-pointer border border-emerald-800 flex items-center justify-center gap-1.5"
-              title="Compose and send this booking inquiry via official Gmail"
-            >
-              <Send className="w-3.5 h-3.5 text-amber-400" />
-              <span>Send via Gmail</span>
             </button>
           )}
 

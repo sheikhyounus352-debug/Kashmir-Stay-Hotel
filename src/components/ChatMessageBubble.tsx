@@ -20,14 +20,12 @@ interface ChatMessageBubbleProps {
   message: ChatMessage;
   onConfirmInquiry?: (summary: BookingInquirySummary) => void;
   onModifyInquiry?: () => void;
-  onEmailInquiry?: (summary: BookingInquirySummary) => void;
 }
 
 export const ChatMessageBubble: React.FC<ChatMessageBubbleProps> = ({
   message,
   onConfirmInquiry,
   onModifyInquiry,
-  onEmailInquiry,
 }) => {
   const [isPlayingAudio, setIsPlayingAudio] = useState<boolean>(false);
   const [hasCopied, setHasCopied] = useState<boolean>(false);
@@ -161,11 +159,6 @@ export const ChatMessageBubble: React.FC<ChatMessageBubbleProps> = ({
                   onModifyInquiry={
                     onModifyInquiry && !detectedSummary.isConfirmedByGuest
                       ? onModifyInquiry
-                      : undefined
-                  }
-                  onEmailInquiry={
-                    onEmailInquiry
-                      ? () => onEmailInquiry(detectedSummary)
                       : undefined
                   }
                   isConfirmed={detectedSummary.isConfirmedByGuest}
