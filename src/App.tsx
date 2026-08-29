@@ -36,9 +36,9 @@ import { speakText, stopSpeech, getSpeechRecognition } from './utils/speech';
 const INITIAL_WELCOME_MESSAGE: ChatMessage = {
   id: 'welcome-msg-1',
   sender: 'receptionist',
-  text: `**Warm greetings and welcome to Kashmir Stay Hotel!** 🌸
+  text: `**Warm greetings and welcome!** 🌸
 
-I am your **AI Front Desk Receptionist**. I am here to assist you with questions regarding our hotel, rooms, services, dining, and policies based strictly on our verified hotel records.
+I am your **AI Front Desk Receptionist**. I am here to assist you with questions regarding the hotel, rooms, services, dining, and policies based strictly on verified hotel records.
 
 How may I assist you today?`,
   timestamp: 'Front Desk • Live',

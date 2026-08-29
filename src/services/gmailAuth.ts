@@ -83,7 +83,9 @@ export const googleSignIn = async (): Promise<{ user: User; accessToken: string 
     if (
       error?.code === 'auth/popup-closed-by-user' ||
       error?.code === 'auth/cancelled-popup-request' ||
-      error?.code === 'auth/user-cancelled'
+      error?.code === 'auth/user-cancelled' ||
+      error?.message?.includes('popup-closed-by-user') ||
+      error?.message?.includes('cancelled-popup-request')
     ) {
       return null;
     }

@@ -64,70 +64,71 @@ export function setHotelManagementData(data: Partial<HotelManagementData>): Hote
 export function getVerifiedKnowledge(): VerifiedHotelKnowledge {
   const m = CURRENT_HOTEL_MANAGEMENT_DATA;
   
-  // Synthesize legacy format
+  // Synthesize legacy format strictly from verified data
   const generalParts: string[] = [];
   if (m.profile.isVerified) {
-    if (m.profile.hotelName) generalParts.push(`Hotel Name: ${m.profile.hotelName}`);
-    if (m.profile.address) generalParts.push(`Address: ${m.profile.address}`);
-    if (m.profile.checkInTime) generalParts.push(`Check-In Time: ${m.profile.checkInTime}`);
-    if (m.profile.checkOutTime) generalParts.push(`Check-Out Time: ${m.profile.checkOutTime}`);
+    if (m.profile.hotelName?.trim()) generalParts.push(`Hotel Name: ${m.profile.hotelName.trim()}`);
+    if (m.profile.address?.trim()) generalParts.push(`Address: ${m.profile.address.trim()}`);
+    if (m.profile.checkInTime?.trim()) generalParts.push(`Check-In Time: ${m.profile.checkInTime.trim()}`);
+    if (m.profile.checkOutTime?.trim()) generalParts.push(`Check-Out Time: ${m.profile.checkOutTime.trim()}`);
   }
 
   const contactParts: string[] = [];
   if (m.profile.isVerified) {
-    if (m.profile.phone) contactParts.push(`Phone: ${m.profile.phone}`);
-    if (m.profile.email) contactParts.push(`Email: ${m.profile.email}`);
+    if (m.profile.phone?.trim()) contactParts.push(`Phone: ${m.profile.phone.trim()}`);
+    if (m.profile.email?.trim()) contactParts.push(`Email: ${m.profile.email.trim()}`);
   }
   if (m.contacts.isVerified) {
-    if (m.contacts.receptionContact) contactParts.push(`Reception: ${m.contacts.receptionContact}`);
-    if (m.contacts.bookingContact) contactParts.push(`Reservations: ${m.contacts.bookingContact}`);
-    if (m.contacts.emergencyContact) contactParts.push(`Emergency: ${m.contacts.emergencyContact}`);
-    if (m.contacts.staffInstructions) contactParts.push(`Staff Guidelines: ${m.contacts.staffInstructions}`);
+    if (m.contacts.receptionContact?.trim()) contactParts.push(`Reception: ${m.contacts.receptionContact.trim()}`);
+    if (m.contacts.bookingContact?.trim()) contactParts.push(`Reservations: ${m.contacts.bookingContact.trim()}`);
+    if (m.contacts.emergencyContact?.trim()) contactParts.push(`Emergency: ${m.contacts.emergencyContact.trim()}`);
+    if (m.contacts.staffInstructions?.trim()) contactParts.push(`Staff Guidelines: ${m.contacts.staffInstructions.trim()}`);
   }
 
   const roomParts: string[] = [];
   if (m.roomsVerified && Array.isArray(m.rooms) && m.rooms.length > 0) {
     m.rooms.forEach((r, idx) => {
       if (r.isVerified !== false) {
-        roomParts.push(
-          `[Room ${idx + 1}: ${r.roomType || 'Standard Room'}]\n` +
-          `- Description: ${r.roomDescription || 'N/A'}\n` +
-          `- Price/Tariff: ${r.price || 'N/A'}\n` +
-          `- Capacity: ${r.maxGuests ? `${r.maxGuests} Guests` : 'N/A'}\n` +
-          `- Total Rooms: ${r.numberOfRooms || 'N/A'}\n` +
-          `- Facilities: ${r.availableFacilities || 'N/A'}\n` +
-          `- Status: ${r.availabilityStatus || 'Available for inquiries'}`
-        );
+        const details: string[] = [];
+        if (r.roomDescription?.trim()) details.push(`- Description: ${r.roomDescription.trim()}`);
+        if (r.price?.trim()) details.push(`- Price/Tariff: ${r.price.trim()}`);
+        if (r.maxGuests?.trim()) details.push(`- Capacity: ${r.maxGuests.trim()}`);
+        if (r.numberOfRooms?.trim()) details.push(`- Total Rooms: ${r.numberOfRooms.trim()}`);
+        if (r.availableFacilities?.trim()) details.push(`- Facilities: ${r.availableFacilities.trim()}`);
+        if (r.availabilityStatus?.trim()) details.push(`- Status: ${r.availabilityStatus.trim()}`);
+
+        const header = r.roomType?.trim() ? `[Room ${idx + 1}: ${r.roomType.trim()}]` : `[Room Option ${idx + 1}]`;
+        roomParts.push(`${header}${details.length > 0 ? '\n' + details.join('\n') : ''}`);
       }
     });
   }
 
   const facilitiesParts: string[] = [];
   if (m.facilities.isVerified) {
-    if (m.facilities.facilities) facilitiesParts.push(`Hotel Facilities:\n${m.facilities.facilities}`);
-    if (m.facilities.transportServices) facilitiesParts.push(`Transport & Sightseeing:\n${m.facilities.transportServices}`);
-    if (m.facilities.specialServices) facilitiesParts.push(`Special Services:\n${m.facilities.specialServices}`);
-    if (m.facilities.otherAmenities) facilitiesParts.push(`Other Amenities:\n${m.facilities.otherAmenities}`);
+    if (m.facilities.facilities?.trim()) facilitiesParts.push(`Hotel Facilities:\n${m.facilities.facilities.trim()}`);
+    if (m.facilities.transportServices?.trim()) facilitiesParts.push(`Transport & Sightseeing:\n${m.facilities.transportServices.trim()}`);
+    if (m.facilities.specialServices?.trim()) facilitiesParts.push(`Special Services:\n${m.facilities.specialServices.trim()}`);
+    if (m.facilities.otherAmenities?.trim()) facilitiesParts.push(`Other Amenities:\n${m.facilities.otherAmenities.trim()}`);
   }
 
   const diningParts: string[] = [];
-  if (m.facilities.isVerified && m.facilities.diningServices) {
-    diningParts.push(`Dining & Meals:\n${m.facilities.diningServices}`);
+  if (m.facilities.isVerified && m.facilities.diningServices?.trim()) {
+    diningParts.push(`Dining & Meals:\n${m.facilities.diningServices.trim()}`);
   }
 
   const policiesParts: string[] = [];
   if (m.policies.isVerified) {
-    if (m.policies.cancellationPolicy) policiesParts.push(`Cancellation Policy:\n${m.policies.cancellationPolicy}`);
-    if (m.policies.paymentPolicy) policiesParts.push(`Payment Policy:\n${m.policies.paymentPolicy}`);
-    if (m.policies.guestIdRequirements) policiesParts.push(`ID Requirements:\n${m.policies.guestIdRequirements}`);
-    if (m.policies.childrenPolicy) policiesParts.push(`Children Policy:\n${m.policies.childrenPolicy}`);
-    if (m.policies.petPolicy) policiesParts.push(`Pet Policy:\n${m.policies.petPolicy}`);
-    if (m.policies.otherPolicies) policiesParts.push(`Other Policies:\n${m.policies.otherPolicies}`);
+    if (m.policies.cancellationPolicy?.trim()) policiesParts.push(`Cancellation Policy:\n${m.policies.cancellationPolicy.trim()}`);
+    if (m.policies.paymentPolicy?.trim()) policiesParts.push(`Payment Policy:\n${m.policies.paymentPolicy.trim()}`);
+    if (m.policies.guestIdRequirements?.trim()) policiesParts.push(`ID Requirements:\n${m.policies.guestIdRequirements.trim()}`);
+    if (m.policies.childrenPolicy?.trim()) policiesParts.push(`Children Policy:\n${m.policies.childrenPolicy.trim()}`);
+    if (m.policies.petPolicy?.trim()) policiesParts.push(`Pet Policy:\n${m.policies.petPolicy.trim()}`);
+    if (m.policies.otherPolicies?.trim()) policiesParts.push(`Other Policies:\n${m.policies.otherPolicies.trim()}`);
   }
 
   const notesParts: string[] = [];
-  if (m.customNotes.isVerified && m.customNotes.content) {
-    notesParts.push(m.customNotes.content);
+  if (m.customNotes.isVerified && m.customNotes.content?.trim()) {
+    notesParts.push(m.customNotes.content.trim());
   }
 
   return {
@@ -143,48 +144,54 @@ export function getVerifiedKnowledge(): VerifiedHotelKnowledge {
 }
 
 export function setVerifiedKnowledge(data: Partial<VerifiedHotelKnowledge>): VerifiedHotelKnowledge {
-  // Map legacy knowledge into management structure
+  // Map legacy knowledge into management structure strictly without inventing or assuming any data
   const updated: Partial<HotelManagementData> = {};
 
   if (typeof data.generalInfo === 'string') {
+    const hasGeneral = Boolean(data.generalInfo.trim());
     updated.profile = {
       ...CURRENT_HOTEL_MANAGEMENT_DATA.profile,
-      hotelName: CURRENT_HOTEL_MANAGEMENT_DATA.profile.hotelName || 'Kashmir Stay Hotel',
-      address: data.generalInfo,
-      isVerified: Boolean(data.generalInfo.trim()),
-      lastUpdated: new Date().toISOString(),
+      address: data.generalInfo.trim(),
+      isVerified: hasGeneral,
+      lastUpdated: hasGeneral ? new Date().toISOString() : '',
     };
   }
   if (typeof data.contactDetails === 'string') {
+    const hasContact = Boolean(data.contactDetails.trim());
     updated.contacts = {
       ...CURRENT_HOTEL_MANAGEMENT_DATA.contacts,
-      receptionContact: data.contactDetails,
-      isVerified: Boolean(data.contactDetails.trim()),
-      lastUpdated: new Date().toISOString(),
+      receptionContact: data.contactDetails.trim(),
+      isVerified: hasContact,
+      lastUpdated: hasContact ? new Date().toISOString() : '',
     };
   }
   if (typeof data.facilitiesAndAmenities === 'string' || typeof data.diningAndFood === 'string') {
+    const facStr = (data.facilitiesAndAmenities || '').trim();
+    const dinStr = (data.diningAndFood || '').trim();
+    const hasFac = Boolean(facStr || dinStr);
     updated.facilities = {
       ...CURRENT_HOTEL_MANAGEMENT_DATA.facilities,
-      facilities: data.facilitiesAndAmenities || CURRENT_HOTEL_MANAGEMENT_DATA.facilities.facilities,
-      diningServices: data.diningAndFood || CURRENT_HOTEL_MANAGEMENT_DATA.facilities.diningServices,
-      isVerified: Boolean((data.facilitiesAndAmenities || data.diningAndFood || '').trim()),
-      lastUpdated: new Date().toISOString(),
+      facilities: facStr || (hasFac ? CURRENT_HOTEL_MANAGEMENT_DATA.facilities.facilities : ''),
+      diningServices: dinStr || (hasFac ? CURRENT_HOTEL_MANAGEMENT_DATA.facilities.diningServices : ''),
+      isVerified: hasFac,
+      lastUpdated: hasFac ? new Date().toISOString() : '',
     };
   }
   if (typeof data.checkInCheckOutPolicies === 'string') {
+    const hasPol = Boolean(data.checkInCheckOutPolicies.trim());
     updated.policies = {
       ...CURRENT_HOTEL_MANAGEMENT_DATA.policies,
-      cancellationPolicy: data.checkInCheckOutPolicies,
-      isVerified: Boolean(data.checkInCheckOutPolicies.trim()),
-      lastUpdated: new Date().toISOString(),
+      cancellationPolicy: data.checkInCheckOutPolicies.trim(),
+      isVerified: hasPol,
+      lastUpdated: hasPol ? new Date().toISOString() : '',
     };
   }
   if (typeof data.additionalVerifiedNotes === 'string') {
+    const hasNotes = Boolean(data.additionalVerifiedNotes.trim());
     updated.customNotes = {
-      content: data.additionalVerifiedNotes,
-      isVerified: Boolean(data.additionalVerifiedNotes.trim()),
-      lastUpdated: new Date().toISOString(),
+      content: data.additionalVerifiedNotes.trim(),
+      isVerified: hasNotes,
+      lastUpdated: hasNotes ? new Date().toISOString() : '',
     };
   }
 
@@ -203,12 +210,12 @@ export function compileKnowledgePrompt(knowledge?: VerifiedHotelKnowledge): stri
   // 1. Hotel Profile (Only if isVerified === true)
   if (m.profile.isVerified) {
     const profileLines: string[] = [];
-    if (m.profile.hotelName) profileLines.push(`Hotel Name: ${m.profile.hotelName}`);
-    if (m.profile.address) profileLines.push(`Address: ${m.profile.address}`);
-    if (m.profile.phone) profileLines.push(`Phone: ${m.profile.phone}`);
-    if (m.profile.email) profileLines.push(`Email: ${m.profile.email}`);
-    if (m.profile.checkInTime) profileLines.push(`Standard Check-In Time: ${m.profile.checkInTime}`);
-    if (m.profile.checkOutTime) profileLines.push(`Standard Check-Out Time: ${m.profile.checkOutTime}`);
+    if (m.profile.hotelName?.trim()) profileLines.push(`Hotel Name: ${m.profile.hotelName.trim()}`);
+    if (m.profile.address?.trim()) profileLines.push(`Address: ${m.profile.address.trim()}`);
+    if (m.profile.phone?.trim()) profileLines.push(`Phone: ${m.profile.phone.trim()}`);
+    if (m.profile.email?.trim()) profileLines.push(`Email: ${m.profile.email.trim()}`);
+    if (m.profile.checkInTime?.trim()) profileLines.push(`Standard Check-In Time: ${m.profile.checkInTime.trim()}`);
+    if (m.profile.checkOutTime?.trim()) profileLines.push(`Standard Check-Out Time: ${m.profile.checkOutTime.trim()}`);
 
     if (profileLines.length > 0) {
       sections.push(`[VERIFIED HOTEL PROFILE & LOCATION]\n${profileLines.join('\n')}`);
@@ -219,16 +226,20 @@ export function compileKnowledgePrompt(knowledge?: VerifiedHotelKnowledge): stri
   if (m.roomsVerified && Array.isArray(m.rooms) && m.rooms.length > 0) {
     const roomBlocks: string[] = [];
     m.rooms.forEach((r, i) => {
-      if (r.isVerified !== false && (r.roomType || r.roomDescription || r.price)) {
-        roomBlocks.push(
-          `[Room Option ${i + 1}: ${r.roomType || 'Standard Category'}]\n` +
-          `- Description: ${r.roomDescription || 'Not specified'}\n` +
-          `- Price / Tariff: ${r.price || 'Not specified'}\n` +
-          `- Max Guests / Capacity: ${r.maxGuests || 'Not specified'}\n` +
-          `- Available Room Count: ${r.numberOfRooms || 'Not specified'}\n` +
-          `- Room Facilities: ${r.availableFacilities || 'Not specified'}\n` +
-          `- Availability Status: ${r.availabilityStatus || 'Available for inquiries'}`
-        );
+      if (r.isVerified !== false) {
+        const lines: string[] = [];
+        if (r.roomType?.trim()) lines.push(`Room Category: ${r.roomType.trim()}`);
+        if (r.roomDescription?.trim()) lines.push(`Description: ${r.roomDescription.trim()}`);
+        if (r.price?.trim()) lines.push(`Price / Tariff: ${r.price.trim()}`);
+        if (r.maxGuests?.trim()) lines.push(`Max Guests / Capacity: ${r.maxGuests.trim()}`);
+        if (r.numberOfRooms?.trim()) lines.push(`Available Room Count: ${r.numberOfRooms.trim()}`);
+        if (r.availableFacilities?.trim()) lines.push(`Room Facilities: ${r.availableFacilities.trim()}`);
+        if (r.availabilityStatus?.trim()) lines.push(`Availability Status: ${r.availabilityStatus.trim()}`);
+
+        if (lines.length > 0) {
+          const header = r.roomType?.trim() ? `[Verified Room: ${r.roomType.trim()}]` : `[Verified Room Option ${i + 1}]`;
+          roomBlocks.push(`${header}\n${lines.map((l) => `- ${l}`).join('\n')}`);
+        }
       }
     });
 
@@ -240,11 +251,11 @@ export function compileKnowledgePrompt(knowledge?: VerifiedHotelKnowledge): stri
   // 3. Facilities & Services (Only if facilities.isVerified === true)
   if (m.facilities.isVerified) {
     const fLines: string[] = [];
-    if (m.facilities.facilities) fLines.push(`- General Facilities: ${m.facilities.facilities}`);
-    if (m.facilities.diningServices) fLines.push(`- Dining & Meal Services: ${m.facilities.diningServices}`);
-    if (m.facilities.transportServices) fLines.push(`- Transport & Travel Services: ${m.facilities.transportServices}`);
-    if (m.facilities.specialServices) fLines.push(`- Special & Guest Services: ${m.facilities.specialServices}`);
-    if (m.facilities.otherAmenities) fLines.push(`- Other Hotel Amenities: ${m.facilities.otherAmenities}`);
+    if (m.facilities.facilities?.trim()) fLines.push(`- General Facilities: ${m.facilities.facilities.trim()}`);
+    if (m.facilities.diningServices?.trim()) fLines.push(`- Dining & Meal Services: ${m.facilities.diningServices.trim()}`);
+    if (m.facilities.transportServices?.trim()) fLines.push(`- Transport & Travel Services: ${m.facilities.transportServices.trim()}`);
+    if (m.facilities.specialServices?.trim()) fLines.push(`- Special & Guest Services: ${m.facilities.specialServices.trim()}`);
+    if (m.facilities.otherAmenities?.trim()) fLines.push(`- Other Hotel Amenities: ${m.facilities.otherAmenities.trim()}`);
 
     if (fLines.length > 0) {
       sections.push(`[VERIFIED FACILITIES, DINING & SERVICES]\n${fLines.join('\n')}`);
@@ -254,12 +265,12 @@ export function compileKnowledgePrompt(knowledge?: VerifiedHotelKnowledge): stri
   // 4. Policies (Only if policies.isVerified === true)
   if (m.policies.isVerified) {
     const pLines: string[] = [];
-    if (m.policies.cancellationPolicy) pLines.push(`- Cancellation Policy: ${m.policies.cancellationPolicy}`);
-    if (m.policies.paymentPolicy) pLines.push(`- Payment Policy & Accepted Methods: ${m.policies.paymentPolicy}`);
-    if (m.policies.guestIdRequirements) pLines.push(`- Guest ID & Check-In Verification: ${m.policies.guestIdRequirements}`);
-    if (m.policies.childrenPolicy) pLines.push(`- Children & Extra Bed Policy: ${m.policies.childrenPolicy}`);
-    if (m.policies.petPolicy) pLines.push(`- Pet Policy: ${m.policies.petPolicy}`);
-    if (m.policies.otherPolicies) pLines.push(`- Other Hotel Rules & Policies: ${m.policies.otherPolicies}`);
+    if (m.policies.cancellationPolicy?.trim()) pLines.push(`- Cancellation Policy: ${m.policies.cancellationPolicy.trim()}`);
+    if (m.policies.paymentPolicy?.trim()) pLines.push(`- Payment Policy & Accepted Methods: ${m.policies.paymentPolicy.trim()}`);
+    if (m.policies.guestIdRequirements?.trim()) pLines.push(`- Guest ID & Check-In Verification: ${m.policies.guestIdRequirements.trim()}`);
+    if (m.policies.childrenPolicy?.trim()) pLines.push(`- Children & Extra Bed Policy: ${m.policies.childrenPolicy.trim()}`);
+    if (m.policies.petPolicy?.trim()) pLines.push(`- Pet Policy: ${m.policies.petPolicy.trim()}`);
+    if (m.policies.otherPolicies?.trim()) pLines.push(`- Other Hotel Rules & Policies: ${m.policies.otherPolicies.trim()}`);
 
     if (pLines.length > 0) {
       sections.push(`[VERIFIED HOTEL POLICIES]\n${pLines.join('\n')}`);
@@ -269,10 +280,10 @@ export function compileKnowledgePrompt(knowledge?: VerifiedHotelKnowledge): stri
   // 5. Contacts & Staff (Only if contacts.isVerified === true)
   if (m.contacts.isVerified) {
     const cLines: string[] = [];
-    if (m.contacts.receptionContact) cLines.push(`- Reception Front Desk Contact: ${m.contacts.receptionContact}`);
-    if (m.contacts.bookingContact) cLines.push(`- Reservations & Booking Contact: ${m.contacts.bookingContact}`);
-    if (m.contacts.emergencyContact) cLines.push(`- 24/7 Emergency / Duty Manager Contact: ${m.contacts.emergencyContact}`);
-    if (m.contacts.staffInstructions) cLines.push(`- Official Staff Instructions: ${m.contacts.staffInstructions}`);
+    if (m.contacts.receptionContact?.trim()) cLines.push(`- Reception Front Desk Contact: ${m.contacts.receptionContact.trim()}`);
+    if (m.contacts.bookingContact?.trim()) cLines.push(`- Reservations & Booking Contact: ${m.contacts.bookingContact.trim()}`);
+    if (m.contacts.emergencyContact?.trim()) cLines.push(`- 24/7 Emergency / Duty Manager Contact: ${m.contacts.emergencyContact.trim()}`);
+    if (m.contacts.staffInstructions?.trim()) cLines.push(`- Official Staff Instructions: ${m.contacts.staffInstructions.trim()}`);
 
     if (cLines.length > 0) {
       sections.push(`[VERIFIED CONTACTS & STAFF GUIDELINES]\n${cLines.join('\n')}`);
@@ -280,12 +291,12 @@ export function compileKnowledgePrompt(knowledge?: VerifiedHotelKnowledge): stri
   }
 
   // 6. Custom Verified Notes (Only if customNotes.isVerified === true)
-  if (m.customNotes.isVerified && m.customNotes.content.trim()) {
+  if (m.customNotes.isVerified && m.customNotes.content?.trim()) {
     sections.push(`[ADDITIONAL VERIFIED MANAGEMENT NOTES]\n${m.customNotes.content.trim()}`);
   }
 
   if (sections.length === 0) {
-    return 'NO VERIFIED HOTEL INFORMATION HAS BEEN PROVIDED YET. The hotel database is currently empty and unverified.';
+    return 'NO VERIFIED HOTEL INFORMATION HAS BEEN PROVIDED YET. The hotel database is currently completely empty and unverified.';
   }
 
   return sections.join('\n\n');

@@ -18,7 +18,7 @@ const COMMON_HOTEL_INQUIRIES = [
   {
     id: 'room-inquiry',
     label: 'Room Inquiry',
-    prompt: 'Can you tell me about the available rooms and room types at Kashmir Stay Hotel?',
+    prompt: 'Can you tell me about the available rooms and room types?',
     icon: <Bed className="w-3.5 h-3.5 text-amber-700" />,
   },
   {
@@ -36,7 +36,7 @@ const COMMON_HOTEL_INQUIRIES = [
   {
     id: 'timings',
     label: 'Check-in / Out Times',
-    prompt: 'What are the official check-in and check-out times at Kashmir Stay Hotel?',
+    prompt: 'What are the official check-in and check-out times?',
     icon: <Clock className="w-3.5 h-3.5 text-teal-700" />,
   },
   {

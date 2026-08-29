@@ -40,7 +40,7 @@ import {
   StaffContactData,
   CategoryVerificationStatus
 } from '../types';
-import { getCategoryVerificationStatus, getCategoryStatusDetails } from '../hotelData';
+import { getCategoryVerificationStatus, getCategoryStatusDetails, compileKnowledgePrompt } from '../hotelData';
 import { SecurityTestConsole } from './SecurityTestConsole';
 
 interface HotelManagementDashboardProps {
@@ -1610,46 +1610,7 @@ export const HotelManagementDashboard: React.FC<HotelManagementDashboardProps> =
                   Compiled Grounding Text for AI Receptionist:
                 </label>
                 <pre className="p-4 rounded-xl bg-stone-900 text-stone-200 text-xs font-mono whitespace-pre-wrap leading-relaxed max-h-96 overflow-y-auto border border-stone-800">
-                  {verifiedCount === 0 ? (
-                    <span className="text-amber-400">
-                      NO VERIFIED HOTEL INFORMATION HAS BEEN PROVIDED YET. The hotel database is currently empty and unverified.
-                      &#10;&#10;In this state, any specific factual inquiries will safely return:
-                      &#10;"I'm sorry, I don't have that information yet. Please contact our hotel staff for assistance."
-                    </span>
-                  ) : (
-                    `==============================================
-VERIFIED KASHMIR STAY HOTEL INFORMATION:
-==============================================
-${[
-  formData.profile.isVerified && profileHasContent
-    ? `[VERIFIED HOTEL PROFILE & LOCATION]\nHotel Name: ${formData.profile.hotelName || 'Kashmir Stay Hotel'}\nAddress: ${formData.profile.address || 'N/A'}\nPhone: ${formData.profile.phone || 'N/A'}\nEmail: ${formData.profile.email || 'N/A'}\nCheck-In: ${formData.profile.checkInTime || 'N/A'}\nCheck-Out: ${formData.profile.checkOutTime || 'N/A'}`
-    : null,
-  formData.roomsVerified && roomsHasContent
-    ? `[VERIFIED ROOMS & TARIFFS]\n` +
-      formData.rooms
-        .map(
-          (r, i) =>
-            `[Room ${i + 1}: ${r.roomType || 'Standard'}]\n- Price: ${r.price || 'N/A'}\n- Guests: ${r.maxGuests || 'N/A'}\n- Facilities: ${r.availableFacilities || 'N/A'}\n- Status: ${r.availabilityStatus || 'N/A'}`
-        )
-        .join('\n\n')
-    : null,
-  formData.facilities.isVerified && facilitiesHasContent
-    ? `[VERIFIED FACILITIES & SERVICES]\n- Facilities: ${formData.facilities.facilities || 'N/A'}\n- Dining: ${formData.facilities.diningServices || 'N/A'}\n- Transport: ${formData.facilities.transportServices || 'N/A'}`
-    : null,
-  formData.policies.isVerified && policiesHasContent
-    ? `[VERIFIED POLICIES]\n- Cancellation: ${formData.policies.cancellationPolicy || 'N/A'}\n- Payment: ${formData.policies.paymentPolicy || 'N/A'}\n- ID: ${formData.policies.guestIdRequirements || 'N/A'}\n- Children: ${formData.policies.childrenPolicy || 'N/A'}`
-    : null,
-  formData.contacts.isVerified && contactsHasContent
-    ? `[VERIFIED CONTACTS]\n- Reception: ${formData.contacts.receptionContact || 'N/A'}\n- Booking: ${formData.contacts.bookingContact || 'N/A'}\n- Emergency: ${formData.contacts.emergencyContact || 'N/A'}`
-    : null,
-  formData.customNotes.isVerified && notesHasContent
-    ? `[ADDITIONAL VERIFIED NOTES]\n${formData.customNotes.content}`
-    : null,
-]
-  .filter(Boolean)
-  .join('\n\n')}
-==============================================`
-                  )}
+                  {compileKnowledgePrompt()}
                 </pre>
               </div>
 
