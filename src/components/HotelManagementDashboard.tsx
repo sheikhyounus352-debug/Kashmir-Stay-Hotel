@@ -28,7 +28,8 @@ import {
   Compass,
   Info,
   Sliders,
-  AlertTriangle
+  AlertTriangle,
+  Mail
 } from 'lucide-react';
 import { 
   HotelManagementData, 
@@ -46,6 +47,7 @@ interface HotelManagementDashboardProps {
   data: HotelManagementData;
   onSave: (updatedData: HotelManagementData) => Promise<void>;
   onReturnToReceptionist: () => void;
+  onOpenGmail?: () => void;
 }
 
 type ActiveSection = 'profile' | 'rooms' | 'facilities' | 'policies' | 'contacts' | 'notes' | 'preview' | 'testing';
@@ -54,6 +56,7 @@ export const HotelManagementDashboard: React.FC<HotelManagementDashboardProps> =
   data: initialData,
   onSave,
   onReturnToReceptionist,
+  onOpenGmail,
 }) => {
   const [formData, setFormData] = useState<HotelManagementData>(initialData);
   const [activeSection, setActiveSection] = useState<ActiveSection>('profile');
@@ -365,6 +368,18 @@ export const HotelManagementDashboard: React.FC<HotelManagementDashboardProps> =
                 Verified Categories: <strong className="text-amber-300">{verifiedCount} / {totalSections}</strong>
               </span>
             </div>
+
+            {/* Gmail Action Button */}
+            {onOpenGmail && (
+              <button
+                onClick={onOpenGmail}
+                className="px-3.5 py-2 rounded-xl bg-emerald-950 hover:bg-emerald-900 text-stone-200 border border-emerald-800 hover:border-amber-400 font-semibold text-xs flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
+                title="Open Gmail Communications Center"
+              >
+                <Mail className="w-4 h-4 text-amber-400" />
+                <span className="hidden sm:inline">Gmail Center</span>
+              </button>
+            )}
 
             {/* Save All Button */}
             <button
