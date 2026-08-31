@@ -5,10 +5,7 @@ import {
   ShieldCheck, 
   AlertCircle, 
   Loader2, 
-  X, 
-  UserCheck, 
-  Building2,
-  Info
+  X
 } from 'lucide-react';
 import { AuthSession } from '../types';
 
@@ -23,8 +20,8 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
   onClose,
   onLoginSuccess,
 }) => {
-  const [username, setUsername] = useState<string>('admin');
-  const [password, setPassword] = useState<string>('Admin@KashmirStay2026!');
+  const [username, setUsername] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -32,7 +29,7 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!username.trim() || !password.trim()) {
+    if (!username.trim() || !password) {
       setErrorMessage('Please enter both username and password.');
       return;
     }
@@ -46,14 +43,14 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           username: username.trim(),
-          password: password.trim(),
+          password: password,
         }),
       });
 
       const data = await response.json();
 
       if (!response.ok || !data.success) {
-        throw new Error(data.error || 'Authentication failed. Please check your credentials.');
+        throw new Error(data.error || 'Invalid administrator credentials.');
       }
 
       const authSession: AuthSession = {
@@ -65,7 +62,7 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
       onLoginSuccess(authSession);
       onClose();
     } catch (err: any) {
-      setErrorMessage(err.message || 'Unable to connect to authentication service.');
+      setErrorMessage(err.message || 'Invalid administrator credentials.');
     } finally {
       setIsLoading(false);
     }
@@ -126,7 +123,7 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="Enter admin username"
+                placeholder="Enter username"
                 required
                 className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-xs sm:text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-emerald-800 focus:border-transparent bg-stone-50/50 focus:bg-white"
               />
@@ -148,17 +145,6 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
                 className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-xs sm:text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-emerald-800 focus:border-transparent bg-stone-50/50 focus:bg-white"
               />
             </div>
-          </div>
-
-          {/* Quick Default Credentials Note */}
-          <div className="p-3 rounded-xl bg-amber-50/80 border border-amber-200/80 text-[11px] text-amber-900 space-y-1">
-            <div className="flex items-center gap-1.5 font-bold text-amber-950">
-              <Info className="w-3.5 h-3.5 text-amber-700" />
-              <span>Default Administrator Credentials:</span>
-            </div>
-            <p className="text-amber-800">
-              Username: <code className="font-mono bg-amber-100/80 px-1 py-0.5 rounded text-amber-950">admin</code> &bull; Password: <code className="font-mono bg-amber-100/80 px-1 py-0.5 rounded text-amber-950">Admin@KashmirStay2026!</code>
-            </p>
           </div>
 
           {/* Submit Button */}

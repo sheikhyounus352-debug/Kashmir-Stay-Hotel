@@ -32,20 +32,43 @@ interface AdminSession {
   expiresAt: number;
 }
 
-const ADMIN_CREDENTIALS = [
-  {
-    id: "admin-1",
-    username: "admin",
-    password: process.env.ADMIN_PASSWORD || "Admin@KashmirStay2026!",
-    name: "Hotel General Manager",
-    role: "admin" as const,
+interface AdminUser {
+  id: string;
+  username: string;
+  name: string;
+  role: 'admin';
+}
+
+function getAdminUsername(): string {
+  return (process.env.ADMIN_USERNAME || "admin").trim();
+}
+
+function verifyAdminCredentials(user: string, pass: string): boolean {
+  const configuredUsername = getAdminUsername();
+  const configuredPassword = process.env.ADMIN_PASSWORD ? process.env.ADMIN_PASSWORD.trim() : "";
+
+  if (!configuredPassword || !user || !pass) {
+    return false;
   }
-];
+
+  const usernameMatch = user.trim().toLowerCase() === configuredUsername.toLowerCase();
+  
+  // Constant-time buffer comparison to prevent timing attacks
+  const passBuf = Buffer.from(pass.trim());
+  const envPassBuf = Buffer.from(configuredPassword);
+  
+  if (passBuf.length !== envPassBuf.length) {
+    return false;
+  }
+
+  const passwordMatch = crypto.timingSafeEqual(passBuf, envPassBuf);
+  return usernameMatch && passwordMatch;
+}
 
 // Active sessions memory store
 const activeAdminSessions = new Map<string, AdminSession>();
 
-function createAdminSession(user: typeof ADMIN_CREDENTIALS[0]): AdminSession {
+function createAdminSession(user: AdminUser): AdminSession {
   const token = "ks_adm_" + crypto.randomBytes(32).toString("hex");
   const now = Date.now();
   const session: AdminSession = {
@@ -440,36 +463,49 @@ function getDeterministicFallbackResponse(
 app.post("/api/auth/login", (req, res) => {
   try {
     const { username, password } = req.body || {};
-    if (!username || !password) {
-      return res.status(400).json({ error: "Username and password are required." });
-    }
-
-    const user = ADMIN_CREDENTIALS.find(
-      (u) => u.username.toLowerCase() === String(username).toLowerCase().trim() && u.password === String(password).trim()
-    );
-
-    if (!user) {
+    if (!username || !password || typeof username !== "string" || typeof password !== "string") {
       return res.status(401).json({ 
-        error: "Invalid administrator credentials. Access denied.",
+        error: "Invalid administrator credentials.",
         code: "INVALID_CREDENTIALS",
         authenticated: false
       });
     }
 
-    const session = createAdminSession(user);
+    const isValid = verifyAdminCredentials(username, password);
+
+    if (!isValid) {
+      return res.status(401).json({ 
+        error: "Invalid administrator credentials.",
+        code: "INVALID_CREDENTIALS",
+        authenticated: false
+      });
+    }
+
+    const adminUser: AdminUser = {
+      id: "admin-1",
+      username: getAdminUsername(),
+      name: "Hotel General Manager",
+      role: "admin",
+    };
+
+    const session = createAdminSession(adminUser);
     res.json({
       success: true,
       token: session.token,
       user: {
-        id: user.id,
-        username: user.username,
-        name: user.name,
-        role: user.role,
+        id: adminUser.id,
+        username: adminUser.username,
+        name: adminUser.name,
+        role: adminUser.role,
       },
       expiresAt: session.expiresAt,
     });
   } catch (err: any) {
-    res.status(500).json({ error: "Authentication system error." });
+    res.status(401).json({ 
+      error: "Invalid administrator credentials.",
+      code: "INVALID_CREDENTIALS",
+      authenticated: false
+    });
   }
 });
 
@@ -823,17 +859,22 @@ app.post("/api/security-tests/run", async (req, res) => {
     // ========================================================================
     // 4. AUTHORIZED ADMIN AUTHENTICATION & TOKEN ISSUANCE
     // ========================================================================
-    const testAdmin = ADMIN_CREDENTIALS.find(u => u.username === "admin" && u.password === (process.env.ADMIN_PASSWORD || "Admin@KashmirStay2026!"));
-    const testSession = testAdmin ? createAdminSession(testAdmin) : null;
+    const testAdminUser: AdminUser = {
+      id: "admin-test",
+      username: getAdminUsername(),
+      name: "Hotel General Manager",
+      role: "admin",
+    };
+    const testSession = createAdminSession(testAdminUser);
     const tokenValidation = testSession ? validateAdminToken(testSession.token) : null;
     const authPassed = Boolean(testSession && tokenValidation && tokenValidation.role === 'admin');
 
     results.push({
       id: 'test-admin-auth-login',
       name: '4. Administrator Authentication & Secure Token Issuance',
-      description: 'Verifies that authenticating with valid administrator credentials (admin / Admin@KashmirStay2026!) generates a cryptographically secure session token and authorizes management access.',
+      description: 'Verifies that authenticating with valid administrator credentials generates a cryptographically secure session token and authorizes management access.',
       categoryTested: 'Admin Authentication',
-      testQuery: 'POST /api/auth/login (username: "admin")',
+      testQuery: 'POST /api/auth/login (Environment-configured credentials)',
       expectedBehavior: 'Issues valid session token with role="admin" and 24-hour expiration',
       actualResponse: authPassed
         ? `Authenticated successfully. Generated token ${testSession?.token.slice(0, 16)}... (expires in 24h).`
