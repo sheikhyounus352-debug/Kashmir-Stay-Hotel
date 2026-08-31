@@ -16,7 +16,8 @@ import {
   SlidersHorizontal,
   ArrowRight,
   Lock,
-  UserCheck
+  UserCheck,
+  Briefcase
 } from 'lucide-react';
 import { Navbar } from './components/Navbar';
 import { ChatMessageBubble } from './components/ChatMessageBubble';
@@ -24,6 +25,8 @@ import { QuickPrompts } from './components/QuickPrompts';
 import { VerifiedKnowledgeModal } from './components/VerifiedKnowledgeModal';
 import { HotelManagementDashboard } from './components/HotelManagementDashboard';
 import { AdminLoginModal } from './components/AdminLoginModal';
+import { TravelAgentLoginModal } from './components/TravelAgentLoginModal';
+import { TravelAgentPortal } from './components/TravelAgentPortal';
 import { 
   ChatMessage, 
   VerifiedHotelKnowledge, 
@@ -31,7 +34,8 @@ import {
   HotelManagementData,
   EMPTY_HOTEL_MANAGEMENT_DATA,
   BookingInquirySummary,
-  AuthSession
+  AuthSession,
+  AgentAuthSession
 } from './types';
 import { speakText, stopSpeech, getSpeechRecognition } from './utils/speech';
 
@@ -47,11 +51,14 @@ How may I assist you today?`,
 };
 
 const AUTH_STORAGE_KEY = 'kashmir_stay_admin_token';
+const AGENT_AUTH_STORAGE_KEY = 'kashmir_stay_agent_token';
 
 export default function App() {
-  const [activeView, setActiveView] = useState<'receptionist' | 'management'>('receptionist');
+  const [activeView, setActiveView] = useState<'receptionist' | 'management' | 'agent-portal'>('receptionist');
   const [authSession, setAuthSession] = useState<AuthSession | null>(null);
+  const [agentSession, setAgentSession] = useState<AgentAuthSession | null>(null);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState<boolean>(false);
+  const [isAgentLoginModalOpen, setIsAgentLoginModalOpen] = useState<boolean>(false);
   const [messages, setMessages] = useState<ChatMessage[]>([INITIAL_WELCOME_MESSAGE]);
   const [inputText, setInputText] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -76,38 +83,63 @@ export default function App() {
     }
   }, [messages, isLoading, activeView]);
 
-  // Check stored session token on startup
+  // Check stored session tokens on startup
   useEffect(() => {
-    async function restoreSession() {
+    async function restoreSessions() {
+      // 1. Restore Admin Token
       const storedToken = localStorage.getItem(AUTH_STORAGE_KEY);
-      if (!storedToken) return;
-
-      try {
-        const res = await fetch('/api/auth/session', {
-          headers: {
-            'Authorization': `Bearer ${storedToken}`,
-          },
-        });
-        if (res.ok) {
-          const data = await res.json();
-          if (data.authenticated) {
-            const restoredSession: AuthSession = data.session || {
-              token: storedToken,
-              user: data.user,
-              expiresAt: data.expiresAt || (Date.now() + 24 * 60 * 60 * 1000),
-            };
-            setAuthSession(restoredSession);
+      if (storedToken) {
+        try {
+          const res = await fetch('/api/auth/session', {
+            headers: {
+              'Authorization': `Bearer ${storedToken}`,
+            },
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (data.authenticated) {
+              const restoredSession: AuthSession = data.session || {
+                token: storedToken,
+                user: data.user,
+                expiresAt: data.expiresAt || (Date.now() + 24 * 60 * 60 * 1000),
+              };
+              setAuthSession(restoredSession);
+            } else {
+              localStorage.removeItem(AUTH_STORAGE_KEY);
+            }
           } else {
             localStorage.removeItem(AUTH_STORAGE_KEY);
           }
-        } else {
-          localStorage.removeItem(AUTH_STORAGE_KEY);
+        } catch (err) {
+          console.warn('Failed to verify admin session token:', err);
         }
-      } catch (err) {
-        console.warn('Failed to verify session token:', err);
+      }
+
+      // 2. Restore Agent Token
+      const storedAgentToken = localStorage.getItem(AGENT_AUTH_STORAGE_KEY);
+      if (storedAgentToken) {
+        try {
+          const res = await fetch('/api/agent/session', {
+            headers: {
+              'Authorization': `Bearer ${storedAgentToken}`,
+            },
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (data.authenticated && data.session) {
+              setAgentSession(data.session);
+            } else {
+              localStorage.removeItem(AGENT_AUTH_STORAGE_KEY);
+            }
+          } else {
+            localStorage.removeItem(AGENT_AUTH_STORAGE_KEY);
+          }
+        } catch (err) {
+          console.warn('Failed to verify agent session token:', err);
+        }
       }
     }
-    restoreSession();
+    restoreSessions();
   }, []);
 
   // Load verified data from server
@@ -196,7 +228,7 @@ export default function App() {
     }
   };
 
-  // Login handler
+  // Admin Login handler
   const handleLoginSuccess = (session: AuthSession) => {
     setAuthSession(session);
     localStorage.setItem(AUTH_STORAGE_KEY, session.token);
@@ -204,7 +236,7 @@ export default function App() {
     loadHotelData(session.token);
   };
 
-  // Logout handler
+  // Admin Logout handler
   const handleAdminLogout = async () => {
     try {
       if (authSession?.token) {
@@ -220,6 +252,34 @@ export default function App() {
     } finally {
       setAuthSession(null);
       localStorage.removeItem(AUTH_STORAGE_KEY);
+      setActiveView('receptionist');
+    }
+  };
+
+  // Agent Login handler
+  const handleAgentLoginSuccess = (session: AgentAuthSession) => {
+    setAgentSession(session);
+    localStorage.setItem(AGENT_AUTH_STORAGE_KEY, session.token);
+    setActiveView('agent-portal');
+    setIsAgentLoginModalOpen(false);
+  };
+
+  // Agent Logout handler
+  const handleAgentLogout = async () => {
+    try {
+      if (agentSession?.token) {
+        await fetch('/api/agent/logout', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${agentSession.token}`,
+          },
+        });
+      }
+    } catch (err) {
+      console.error('Agent logout error:', err);
+    } finally {
+      setAgentSession(null);
+      localStorage.removeItem(AGENT_AUTH_STORAGE_KEY);
       setActiveView('receptionist');
     }
   };
@@ -437,6 +497,8 @@ export default function App() {
         onChangeView={(view) => {
           if (view === 'management' && !authSession) {
             setIsLoginModalOpen(true);
+          } else if (view === 'agent-portal' && !agentSession) {
+            setIsAgentLoginModalOpen(true);
           } else {
             setActiveView(view);
           }
@@ -444,6 +506,9 @@ export default function App() {
         authSession={authSession}
         onOpenAdminLogin={() => setIsLoginModalOpen(true)}
         onAdminLogout={handleAdminLogout}
+        agentSession={agentSession}
+        onOpenAgentLogin={() => setIsAgentLoginModalOpen(true)}
+        onAgentLogout={handleAgentLogout}
       />
 
       {/* VIEW: HOTEL MANAGEMENT DASHBOARD (Admin Only) */}
@@ -455,6 +520,13 @@ export default function App() {
           onReturnToReceptionist={() => setActiveView('receptionist')}
           authSession={authSession}
           onLogout={handleAdminLogout}
+        />
+      ) : activeView === 'agent-portal' && agentSession ? (
+        /* VIEW: TRAVEL AGENT PORTAL (Agent Only) */
+        <TravelAgentPortal
+          agentSession={agentSession}
+          onLogout={handleAgentLogout}
+          onReturnToReceptionist={() => setActiveView('receptionist')}
         />
       ) : (
         /* VIEW: AI RECEPTIONIST (GUEST VIEW) */
@@ -480,6 +552,21 @@ export default function App() {
 
             <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0 w-full md:w-auto">
               <button
+                id="hero-agent-action-btn"
+                onClick={() => {
+                  if (!agentSession) {
+                    setIsAgentLoginModalOpen(true);
+                  } else {
+                    setActiveView('agent-portal');
+                  }
+                }}
+                className="w-full md:w-auto px-3.5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold text-xs flex items-center justify-center gap-1.5 shadow-md transition-all hover:scale-[1.02] cursor-pointer"
+              >
+                <Briefcase className="w-4 h-4 text-stone-950" />
+                <span>{agentSession ? 'Agent Dashboard' : 'Travel Agent Login (B2B)'}</span>
+              </button>
+
+              <button
                 id="hero-admin-action-btn"
                 onClick={() => {
                   if (!authSession) {
@@ -488,17 +575,17 @@ export default function App() {
                     setActiveView('management');
                   }
                 }}
-                className="w-full md:w-auto px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-stone-950 font-bold text-xs flex items-center justify-center gap-2 shadow-md transition-all hover:scale-[1.02] cursor-pointer"
+                className="w-full md:w-auto px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-800 to-teal-800 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md transition-all hover:scale-[1.02] cursor-pointer border border-emerald-700"
               >
                 {authSession ? (
                   <>
-                    <SlidersHorizontal className="w-4 h-4 text-stone-950" />
-                    <span>Open Hotel Management Dashboard</span>
+                    <SlidersHorizontal className="w-4 h-4 text-amber-400" />
+                    <span>Hotel Dashboard</span>
                   </>
                 ) : (
                   <>
-                    <Lock className="w-4 h-4 text-stone-950" />
-                    <span>Admin Portal Login</span>
+                    <Lock className="w-4 h-4 text-amber-400" />
+                    <span>Admin Login</span>
                   </>
                 )}
               </button>
@@ -640,6 +727,13 @@ export default function App() {
         isOpen={isLoginModalOpen}
         onClose={() => setIsLoginModalOpen(false)}
         onLoginSuccess={handleLoginSuccess}
+      />
+
+      {/* Travel Agent Login Modal */}
+      <TravelAgentLoginModal
+        isOpen={isAgentLoginModalOpen}
+        onClose={() => setIsAgentLoginModalOpen(false)}
+        onLoginSuccess={handleAgentLoginSuccess}
       />
 
       {/* Verified Knowledge Base Manager Modal (Quick editor fallback) */}

@@ -28,7 +28,8 @@ import {
   Compass,
   Info,
   Sliders,
-  AlertTriangle
+  AlertTriangle,
+  Briefcase
 } from 'lucide-react';
 import { 
   HotelManagementData, 
@@ -43,6 +44,7 @@ import {
 } from '../types';
 import { getCategoryVerificationStatus, getCategoryStatusDetails, compileKnowledgePrompt } from '../hotelData';
 import { SecurityTestConsole } from './SecurityTestConsole';
+import { AdminTravelAgentsManager } from './AdminTravelAgentsManager';
 
 interface HotelManagementDashboardProps {
   data: HotelManagementData;
@@ -53,7 +55,7 @@ interface HotelManagementDashboardProps {
   onLogout?: () => void;
 }
 
-type ActiveSection = 'profile' | 'rooms' | 'facilities' | 'policies' | 'contacts' | 'notes' | 'preview' | 'testing';
+type ActiveSection = 'profile' | 'rooms' | 'facilities' | 'policies' | 'contacts' | 'notes' | 'preview' | 'testing' | 'agents';
 
 export const HotelManagementDashboard: React.FC<HotelManagementDashboardProps> = ({
   data: initialData,
@@ -664,6 +666,26 @@ export const HotelManagementDashboard: React.FC<HotelManagementDashboardProps> =
                 </div>
                 <span className="text-[10px] font-bold bg-amber-200/80 text-amber-900 px-2 py-0.5 rounded-full">
                   Test Suite
+                </span>
+              </button>
+
+              {/* Travel Agents & B2B Partners Tab */}
+              <button
+                onClick={() => setActiveSection('agents')}
+                className={`w-full text-left px-3.5 py-3 rounded-xl text-xs sm:text-sm font-medium flex items-center justify-between transition-all cursor-pointer ${
+                  activeSection === 'agents'
+                    ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-stone-950 shadow-md font-bold'
+                    : 'bg-stone-50 hover:bg-stone-100 text-stone-800 border border-stone-200'
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <Briefcase className={`w-4 h-4 ${activeSection === 'agents' ? 'text-stone-950' : 'text-amber-600'}`} />
+                  <span>7. Travel Agents & B2B</span>
+                </div>
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                  activeSection === 'agents' ? 'bg-stone-950 text-amber-400' : 'bg-amber-100 text-amber-900'
+                }`}>
+                  Portal
                 </span>
               </button>
             </div>
@@ -1722,6 +1744,13 @@ export const HotelManagementDashboard: React.FC<HotelManagementDashboardProps> =
             <SecurityTestConsole
               data={formData}
               onNavigateToCategory={(cat) => setActiveSection(cat as ActiveSection)}
+            />
+          )}
+
+          {/* SECTION 9: TRAVEL AGENT PARTNER MANAGEMENT */}
+          {activeSection === 'agents' && authSession && (
+            <AdminTravelAgentsManager
+              authSession={authSession}
             />
           )}
         </div>

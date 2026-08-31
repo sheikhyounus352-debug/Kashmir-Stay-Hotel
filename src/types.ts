@@ -213,4 +213,83 @@ export const EMPTY_HOTEL_KNOWLEDGE: VerifiedHotelKnowledge = {
   lastUpdated: '',
 };
 
+// ==========================================
+// TRAVEL AGENT PORTAL TYPES & INTERFACES
+// ==========================================
+
+export interface TravelAgent {
+  id: string;
+  username: string;
+  email: string;
+  agencyName: string;
+  contactPerson: string;
+  phone: string;
+  commissionPercentage: number;
+  status: 'active' | 'inactive';
+  createdAt: string;
+  totalBookings?: number;
+  totalCommissionEarned?: number;
+}
+
+export interface AgentAuthSession {
+  token: string;
+  agent: TravelAgent;
+  expiresAt?: string | number;
+}
+
+export interface AgentGuestDetails {
+  fullName: string;
+  mobile: string;
+  email: string;
+  adults: number;
+  children: number;
+  specialRequests?: string;
+}
+
+export interface AgentBookingRecord {
+  bookingReference: string;
+  agentId: string;
+  agentName: string;
+  agencyName: string;
+  hotelId: string;
+  hotelName: string;
+  roomId: string;
+  roomType: string;
+  guestDetails: AgentGuestDetails;
+  checkInDate: string;
+  checkOutDate: string;
+  numberOfRooms: number;
+  numberOfGuests: number;
+  numberOfNights: number;
+  roomRate: number;
+  totalAmount: number;
+  commissionRate: number;
+  commissionAmount: number;
+  finalPayableAmount: number;
+  bookingStatus: 'Pending' | 'Confirmed' | 'Cancelled' | 'Completed';
+  createdDateTime: string;
+  cancellationReason?: string;
+  cancelledAt?: string;
+}
+
+export interface AgentCommissionSummary {
+  totalBookings: number;
+  confirmedBookings: number;
+  cancelledBookings: number;
+  totalBookingVolume: number;
+  totalCommissionEarned: number;
+  pendingCommission: number;
+  commissionPercentage: number;
+}
+
+export interface HotelSearchCriteria {
+  checkInDate: string;
+  checkOutDate: string;
+  numberOfRooms: number;
+  adults: number;
+  children: number;
+  location?: string;
+  hotelName?: string;
+}
+
 
