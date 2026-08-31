@@ -3,16 +3,20 @@ import {
   Building2, 
   Volume2, 
   VolumeX, 
-  Database,
-  Compass,
-  ShieldCheck,
-  PlusCircle,
-  FileCheck,
-  LayoutDashboard,
-  MessageSquareQuote,
-  SlidersHorizontal
+  Database, 
+  Compass, 
+  ShieldCheck, 
+  PlusCircle, 
+  FileCheck, 
+  LayoutDashboard, 
+  MessageSquareQuote, 
+  SlidersHorizontal,
+  Lock,
+  Unlock,
+  LogOut,
+  UserCheck
 } from 'lucide-react';
-import { VerifiedHotelKnowledge, HotelManagementData } from '../types';
+import { VerifiedHotelKnowledge, AuthSession } from '../types';
 
 interface NavbarProps {
   autoSpeak: boolean;
@@ -21,6 +25,9 @@ interface NavbarProps {
   knowledge: VerifiedHotelKnowledge;
   activeView: 'receptionist' | 'management';
   onChangeView: (view: 'receptionist' | 'management') => void;
+  authSession: AuthSession | null;
+  onOpenAdminLogin: () => void;
+  onAdminLogout: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -30,10 +37,21 @@ export const Navbar: React.FC<NavbarProps> = ({
   knowledge,
   activeView,
   onChangeView,
+  authSession,
+  onOpenAdminLogin,
+  onAdminLogout,
 }) => {
   const hasKnowledge = Object.entries(knowledge).some(
     ([key, val]) => key !== 'lastUpdated' && typeof val === 'string' && val.trim().length > 0
   );
+
+  const handleManagementClick = () => {
+    if (!authSession) {
+      onOpenAdminLogin();
+    } else {
+      onChangeView('management');
+    }
+  };
 
   return (
     <header className="sticky top-0 z-30 bg-[#0c2f24] text-stone-100 border-b border-emerald-900/50 shadow-md">
@@ -42,20 +60,35 @@ export const Navbar: React.FC<NavbarProps> = ({
         <div className="flex items-center gap-2">
           <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
           <span className="font-medium">
-            Strict Zero-Assumption Mode: AI Receptionist answers strictly from verified hotel records.
+            Strict Zero-Assumption Mode: AI Receptionist answers strictly from verified & published records.
           </span>
         </div>
 
         <div className="flex items-center gap-3 text-xs">
-          <button
-            onClick={() => onChangeView('management')}
-            className="flex items-center gap-1.5 text-amber-300 hover:text-amber-200 underline underline-offset-2 transition-colors cursor-pointer"
-          >
-            <Database className="w-3 h-3 text-amber-400" />
-            <span>
-              {hasKnowledge ? "Verified Hotel Records Active" : "Add & Verify Hotel Information"}
-            </span>
-          </button>
+          {authSession ? (
+            <div className="flex items-center gap-2">
+              <span className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-emerald-900/90 text-emerald-300 border border-emerald-700 text-[11px] font-bold">
+                <UserCheck className="w-3 h-3 text-amber-400" />
+                <span>Admin Logged In ({authSession.user.username})</span>
+              </span>
+              <button
+                onClick={onAdminLogout}
+                className="flex items-center gap-1 text-stone-400 hover:text-stone-200 text-[11px] font-medium transition-colors cursor-pointer"
+                title="Log out of Admin Portal"
+              >
+                <LogOut className="w-3 h-3 text-rose-400" />
+                <span>Log Out</span>
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={onOpenAdminLogin}
+              className="flex items-center gap-1.5 text-amber-300 hover:text-amber-200 transition-colors cursor-pointer"
+            >
+              <Lock className="w-3 h-3 text-amber-400" />
+              <span>Admin Login</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -101,7 +134,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           <button
             id="nav-management-tab"
-            onClick={() => onChangeView('management')}
+            onClick={handleManagementClick}
             className={`px-3 sm:px-4 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer ${
               activeView === 'management'
                 ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-stone-950 shadow-md'
@@ -144,15 +177,15 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
           )}
 
-          {/* Quick Manage Button */}
+          {/* Quick Manage / Login Button */}
           <button
             id="open-knowledge-btn"
-            onClick={() => onChangeView(activeView === 'receptionist' ? 'management' : 'receptionist')}
+            onClick={handleManagementClick}
             className={`px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-semibold flex items-center gap-2 transition-all shadow-md ${
               activeView === 'management'
                 ? "bg-emerald-800/80 hover:bg-emerald-700 text-emerald-100 border border-emerald-600 cursor-pointer"
-                : hasKnowledge
-                ? "bg-emerald-800/80 hover:bg-emerald-700 text-emerald-100 border border-emerald-600 cursor-pointer"
+                : authSession
+                ? "bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold border border-amber-600 cursor-pointer"
                 : "bg-emerald-900 hover:bg-emerald-800 text-amber-300 border border-emerald-700 cursor-pointer"
             }`}
           >
@@ -161,15 +194,15 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <MessageSquareQuote className="w-4 h-4 text-amber-400" />
                 <span>Guest View</span>
               </>
-            ) : hasKnowledge ? (
+            ) : authSession ? (
               <>
-                <FileCheck className="w-4 h-4 text-emerald-300" />
-                <span>Edit Hotel Records</span>
+                <SlidersHorizontal className="w-4 h-4 text-stone-950" />
+                <span>Open Dashboard</span>
               </>
             ) : (
               <>
-                <PlusCircle className="w-4 h-4 text-amber-400" />
-                <span>Configure Records</span>
+                <Lock className="w-4 h-4 text-amber-400" />
+                <span>Admin Login</span>
               </>
             )}
           </button>
@@ -178,4 +211,5 @@ export const Navbar: React.FC<NavbarProps> = ({
     </header>
   );
 };
+
 

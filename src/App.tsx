@@ -14,20 +14,24 @@ import {
   AlertCircle,
   Info,
   SlidersHorizontal,
-  ArrowRight
+  ArrowRight,
+  Lock,
+  UserCheck
 } from 'lucide-react';
 import { Navbar } from './components/Navbar';
 import { ChatMessageBubble } from './components/ChatMessageBubble';
 import { QuickPrompts } from './components/QuickPrompts';
 import { VerifiedKnowledgeModal } from './components/VerifiedKnowledgeModal';
 import { HotelManagementDashboard } from './components/HotelManagementDashboard';
+import { AdminLoginModal } from './components/AdminLoginModal';
 import { 
   ChatMessage, 
   VerifiedHotelKnowledge, 
   EMPTY_HOTEL_KNOWLEDGE,
   HotelManagementData,
   EMPTY_HOTEL_MANAGEMENT_DATA,
-  BookingInquirySummary
+  BookingInquirySummary,
+  AuthSession
 } from './types';
 import { speakText, stopSpeech, getSpeechRecognition } from './utils/speech';
 
@@ -42,8 +46,12 @@ How may I assist you today?`,
   timestamp: 'Front Desk • Live',
 };
 
+const AUTH_STORAGE_KEY = 'kashmir_stay_admin_token';
+
 export default function App() {
   const [activeView, setActiveView] = useState<'receptionist' | 'management'>('receptionist');
+  const [authSession, setAuthSession] = useState<AuthSession | null>(null);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState<boolean>(false);
   const [messages, setMessages] = useState<ChatMessage[]>([INITIAL_WELCOME_MESSAGE]);
   const [inputText, setInputText] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -68,34 +76,71 @@ export default function App() {
     }
   }, [messages, isLoading, activeView]);
 
-  // Load verified management data and knowledge from server on startup
+  // Check stored session token on startup
   useEffect(() => {
-    async function loadData() {
-      try {
-        const [resMgmt, resKnowledge] = await Promise.all([
-          fetch('/api/hotel-management'),
-          fetch('/api/hotel-knowledge'),
-        ]);
+    async function restoreSession() {
+      const storedToken = localStorage.getItem(AUTH_STORAGE_KEY);
+      if (!storedToken) return;
 
+      try {
+        const res = await fetch('/api/auth/session', {
+          headers: {
+            'Authorization': `Bearer ${storedToken}`,
+          },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.authenticated && data.session) {
+            setAuthSession(data.session);
+          } else {
+            localStorage.removeItem(AUTH_STORAGE_KEY);
+          }
+        } else {
+          localStorage.removeItem(AUTH_STORAGE_KEY);
+        }
+      } catch (err) {
+        console.warn('Failed to verify session token:', err);
+      }
+    }
+    restoreSession();
+  }, []);
+
+  // Load verified data from server
+  const loadHotelData = async (token?: string) => {
+    try {
+      const activeToken = token || authSession?.token;
+      const headers: Record<string, string> = {};
+      if (activeToken) {
+        headers['Authorization'] = `Bearer ${activeToken}`;
+      }
+
+      // If authenticated, load full management data
+      if (activeToken) {
+        const resMgmt = await fetch('/api/hotel-management', { headers });
         if (resMgmt.ok) {
           const mgmt = await resMgmt.json();
           if (mgmt && typeof mgmt === 'object') {
             setManagementData(mgmt);
           }
         }
-
-        if (resKnowledge.ok) {
-          const kn = await resKnowledge.json();
-          if (kn && typeof kn === 'object') {
-            setKnowledge(kn);
-          }
-        }
-      } catch (err) {
-        console.warn('Could not fetch hotel data from server:', err);
       }
+
+      // Load published knowledge for guest AI
+      const resKnowledge = await fetch('/api/hotel-knowledge', { headers });
+      if (resKnowledge.ok) {
+        const kn = await resKnowledge.json();
+        if (kn && typeof kn === 'object') {
+          setKnowledge(kn);
+        }
+      }
+    } catch (err) {
+      console.warn('Could not fetch hotel data from server:', err);
     }
-    loadData();
-  }, []);
+  };
+
+  useEffect(() => {
+    loadHotelData();
+  }, [authSession]);
 
   // Handle Speech Recognition setup
   useEffect(() => {
@@ -146,20 +191,65 @@ export default function App() {
     }
   };
 
-  // Save Full Management Data
+  // Login handler
+  const handleLoginSuccess = (session: AuthSession) => {
+    setAuthSession(session);
+    localStorage.setItem(AUTH_STORAGE_KEY, session.token);
+    setActiveView('management');
+    loadHotelData(session.token);
+  };
+
+  // Logout handler
+  const handleAdminLogout = async () => {
+    try {
+      if (authSession?.token) {
+        await fetch('/api/auth/logout', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${authSession.token}`,
+          },
+        });
+      }
+    } catch (err) {
+      console.error('Logout error:', err);
+    } finally {
+      setAuthSession(null);
+      localStorage.removeItem(AUTH_STORAGE_KEY);
+      setActiveView('receptionist');
+    }
+  };
+
+  // Save Full Management Data (Protected)
   const handleSaveManagementData = async (updatedData: HotelManagementData) => {
+    if (!authSession?.token) {
+      setIsLoginModalOpen(true);
+      throw new Error('Authentication required.');
+    }
+
     setManagementData(updatedData);
     try {
       const response = await fetch('/api/hotel-management', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authSession.token}`,
+        },
         body: JSON.stringify(updatedData),
       });
-      if (response.ok) {
-        const resData = await response.json();
-        if (resData.derivedKnowledge) {
-          setKnowledge(resData.derivedKnowledge);
+
+      if (!response.ok) {
+        if (response.status === 401 || response.status === 403) {
+          setAuthSession(null);
+          localStorage.removeItem(AUTH_STORAGE_KEY);
+          setIsLoginModalOpen(true);
+          throw new Error('Admin session expired. Please log in again.');
         }
+        throw new Error(`Failed to save: HTTP ${response.status}`);
+      }
+
+      const resData = await response.json();
+      if (resData.derivedKnowledge) {
+        setKnowledge(resData.derivedKnowledge);
       }
     } catch (err) {
       console.error('Error saving hotel management records:', err);
@@ -167,12 +257,57 @@ export default function App() {
     }
   };
 
+  // Publish Verified Records to live AI Receptionist (Protected)
+  const handlePublishManagementData = async () => {
+    if (!authSession?.token) {
+      setIsLoginModalOpen(true);
+      throw new Error('Authentication required to publish.');
+    }
+
+    try {
+      const response = await fetch('/api/hotel-management/publish', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authSession.token}`,
+        },
+        body: JSON.stringify({}),
+      });
+
+      if (!response.ok) {
+        if (response.status === 401 || response.status === 403) {
+          setAuthSession(null);
+          localStorage.removeItem(AUTH_STORAGE_KEY);
+          setIsLoginModalOpen(true);
+          throw new Error('Admin session expired. Please log in again.');
+        }
+        throw new Error(`Failed to publish: HTTP ${response.status}`);
+      }
+
+      const resData = await response.json();
+      if (resData.managementData) {
+        setManagementData(resData.managementData);
+      }
+      if (resData.derivedKnowledge) {
+        setKnowledge(resData.derivedKnowledge);
+      }
+    } catch (err) {
+      console.error('Error publishing hotel records:', err);
+      throw err;
+    }
+  };
+
   const handleSaveKnowledge = async (updated: VerifiedHotelKnowledge) => {
     setKnowledge(updated);
     try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (authSession?.token) {
+        headers['Authorization'] = `Bearer ${authSession.token}`;
+      }
+
       await fetch('/api/hotel-knowledge', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify(updated),
       });
     } catch (err) {
@@ -285,23 +420,41 @@ export default function App() {
           if (autoSpeak) stopSpeech();
           setAutoSpeak(!autoSpeak);
         }}
-        onOpenKnowledgeManager={() => setActiveView('management')}
+        onOpenKnowledgeManager={() => {
+          if (!authSession) {
+            setIsLoginModalOpen(true);
+          } else {
+            setActiveView('management');
+          }
+        }}
         knowledge={knowledge}
         activeView={activeView}
-        onChangeView={(view) => setActiveView(view)}
+        onChangeView={(view) => {
+          if (view === 'management' && !authSession) {
+            setIsLoginModalOpen(true);
+          } else {
+            setActiveView(view);
+          }
+        }}
+        authSession={authSession}
+        onOpenAdminLogin={() => setIsLoginModalOpen(true)}
+        onAdminLogout={handleAdminLogout}
       />
 
-      {/* VIEW: HOTEL MANAGEMENT DASHBOARD */}
-      {activeView === 'management' ? (
+      {/* VIEW: HOTEL MANAGEMENT DASHBOARD (Admin Only) */}
+      {activeView === 'management' && authSession ? (
         <HotelManagementDashboard
           data={managementData}
           onSave={handleSaveManagementData}
+          onPublish={handlePublishManagementData}
           onReturnToReceptionist={() => setActiveView('receptionist')}
+          authSession={authSession}
+          onLogout={handleAdminLogout}
         />
       ) : (
         /* VIEW: AI RECEPTIONIST (GUEST VIEW) */
         <main className="flex-1 max-w-5xl w-full mx-auto p-3 sm:p-5 md:p-6 flex flex-col gap-4">
-          {/* Hotel Identity & Knowledge Manager Banner */}
+          {/* Hotel Identity & Grounding Banner */}
           <div className="bg-gradient-to-r from-[#0c2f24] via-[#103d2f] to-[#0c2f24] text-stone-100 rounded-2xl p-4 sm:p-5 shadow-md border border-emerald-900/60 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div className="space-y-1">
               <div className="flex items-center gap-2">
@@ -322,18 +475,25 @@ export default function App() {
 
             <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0 w-full md:w-auto">
               <button
-                onClick={() => setActiveView('management')}
+                id="hero-admin-action-btn"
+                onClick={() => {
+                  if (!authSession) {
+                    setIsLoginModalOpen(true);
+                  } else {
+                    setActiveView('management');
+                  }
+                }}
                 className="w-full md:w-auto px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-stone-950 font-bold text-xs flex items-center justify-center gap-2 shadow-md transition-all hover:scale-[1.02] cursor-pointer"
               >
-                {hasVerifiedKnowledge ? (
+                {authSession ? (
                   <>
                     <SlidersHorizontal className="w-4 h-4 text-stone-950" />
                     <span>Open Hotel Management Dashboard</span>
                   </>
                 ) : (
                   <>
-                    <PlusCircle className="w-4 h-4 text-stone-950" />
-                    <span>Configure Verified Hotel Information</span>
+                    <Lock className="w-4 h-4 text-stone-950" />
+                    <span>Admin Portal Login</span>
                   </>
                 )}
               </button>
@@ -464,11 +624,18 @@ export default function App() {
               Kashmir Stay Hotel • AI Receptionist
             </p>
             <p className="text-[11px] text-stone-500">
-              Only hotel information explicitly entered by hotel management is used to answer guest inquiries.
+              Only hotel information explicitly entered and published by hotel management is used to answer guest inquiries.
             </p>
           </footer>
         </main>
       )}
+
+      {/* Admin Login Modal */}
+      <AdminLoginModal
+        isOpen={isLoginModalOpen}
+        onClose={() => setIsLoginModalOpen(false)}
+        onLoginSuccess={handleLoginSuccess}
+      />
 
       {/* Verified Knowledge Base Manager Modal (Quick editor fallback) */}
       <VerifiedKnowledgeModal

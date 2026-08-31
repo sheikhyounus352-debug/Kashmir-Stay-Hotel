@@ -37,7 +37,9 @@ import {
   FacilitiesData, 
   PoliciesData, 
   StaffContactData,
-  CategoryVerificationStatus
+  CategoryVerificationStatus,
+  CategoryLifecycleStatus,
+  AuthSession
 } from '../types';
 import { getCategoryVerificationStatus, getCategoryStatusDetails, compileKnowledgePrompt } from '../hotelData';
 import { SecurityTestConsole } from './SecurityTestConsole';
@@ -45,7 +47,10 @@ import { SecurityTestConsole } from './SecurityTestConsole';
 interface HotelManagementDashboardProps {
   data: HotelManagementData;
   onSave: (updatedData: HotelManagementData) => Promise<void>;
+  onPublish?: () => Promise<void>;
   onReturnToReceptionist: () => void;
+  authSession?: AuthSession | null;
+  onLogout?: () => void;
 }
 
 type ActiveSection = 'profile' | 'rooms' | 'facilities' | 'policies' | 'contacts' | 'notes' | 'preview' | 'testing';
@@ -53,11 +58,15 @@ type ActiveSection = 'profile' | 'rooms' | 'facilities' | 'policies' | 'contacts
 export const HotelManagementDashboard: React.FC<HotelManagementDashboardProps> = ({
   data: initialData,
   onSave,
+  onPublish,
   onReturnToReceptionist,
+  authSession,
+  onLogout,
 }) => {
   const [formData, setFormData] = useState<HotelManagementData>(initialData);
   const [activeSection, setActiveSection] = useState<ActiveSection>('profile');
   const [isSaving, setIsSaving] = useState<boolean>(false);
+  const [isPublishing, setIsPublishing] = useState<boolean>(false);
   const [saveSuccessMessage, setSaveSuccessMessage] = useState<string | null>(null);
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
 
@@ -88,8 +97,8 @@ export const HotelManagementDashboard: React.FC<HotelManagementDashboardProps> =
       };
       await onSave(dataToSave);
       setFormData(dataToSave);
-      setSaveSuccessMessage('All hotel records saved and synchronized with AI Receptionist.');
-      setTimeout(() => setSaveSuccessMessage(null), 4000);
+      setSaveSuccessMessage('All hotel records saved. Remember to click "Publish" to activate verified items for the public AI Receptionist.');
+      setTimeout(() => setSaveSuccessMessage(null), 5000);
     } catch (err) {
       console.error('Save failed:', err);
     } finally {
@@ -97,41 +106,92 @@ export const HotelManagementDashboard: React.FC<HotelManagementDashboardProps> =
     }
   };
 
-  // Status computation for all 6 categories
+  // Helper to trigger publish
+  const handlePublishAll = async () => {
+    if (!onPublish) return;
+    setIsPublishing(true);
+    setSaveSuccessMessage(null);
+    try {
+      await onPublish();
+      // Update local published flags
+      setFormData((prev) => ({
+        ...prev,
+        profile: { ...prev.profile, isPublished: Boolean(prev.profile.isVerified) },
+        rooms: prev.rooms.map((r) => ({ ...r, isPublished: Boolean(r.isVerified) })),
+        roomsPublished: Boolean(prev.roomsVerified),
+        facilities: { ...prev.facilities, isPublished: Boolean(prev.facilities.isVerified) },
+        policies: { ...prev.policies, isPublished: Boolean(prev.policies.isVerified) },
+        contacts: { ...prev.contacts, isPublished: Boolean(prev.contacts.isVerified) },
+        customNotes: { ...prev.customNotes, isPublished: Boolean(prev.customNotes.isVerified) },
+      }));
+      setSaveSuccessMessage('Successfully published all verified hotel records! The public AI Receptionist is now live with these details.');
+      setTimeout(() => setSaveSuccessMessage(null), 5000);
+    } catch (err) {
+      console.error('Publish failed:', err);
+    } finally {
+      setIsPublishing(false);
+    }
+  };
+
+  // Status computation for all 6 categories (Full Lifecycle: Draft -> Verified -> Published)
   const profileHasContent = Boolean(
     formData.profile.hotelName || formData.profile.address || formData.profile.phone || 
     formData.profile.email || formData.profile.checkInTime || formData.profile.checkOutTime
   );
-  const profileStatus: CategoryVerificationStatus = getCategoryVerificationStatus(profileHasContent, formData.profile.isVerified);
+  const profileStatus: CategoryLifecycleStatus = getCategoryVerificationStatus(
+    profileHasContent, 
+    formData.profile.isVerified, 
+    formData.profile.isPublished
+  );
   const profileDetails = getCategoryStatusDetails(profileStatus);
 
   const roomsHasContent = Array.isArray(formData.rooms) && formData.rooms.length > 0;
-  const roomsStatus: CategoryVerificationStatus = getCategoryVerificationStatus(roomsHasContent, formData.roomsVerified);
+  const roomsStatus: CategoryLifecycleStatus = getCategoryVerificationStatus(
+    roomsHasContent, 
+    formData.roomsVerified, 
+    formData.roomsPublished
+  );
   const roomsDetails = getCategoryStatusDetails(roomsStatus);
 
   const facilitiesHasContent = Boolean(
     formData.facilities.facilities || formData.facilities.diningServices || 
     formData.facilities.transportServices || formData.facilities.specialServices || formData.facilities.otherAmenities
   );
-  const facilitiesStatus: CategoryVerificationStatus = getCategoryVerificationStatus(facilitiesHasContent, formData.facilities.isVerified);
+  const facilitiesStatus: CategoryLifecycleStatus = getCategoryVerificationStatus(
+    facilitiesHasContent, 
+    formData.facilities.isVerified, 
+    formData.facilities.isPublished
+  );
   const facilitiesDetails = getCategoryStatusDetails(facilitiesStatus);
 
   const policiesHasContent = Boolean(
     formData.policies.cancellationPolicy || formData.policies.paymentPolicy || 
     formData.policies.guestIdRequirements || formData.policies.childrenPolicy || formData.policies.petPolicy || formData.policies.otherPolicies
   );
-  const policiesStatus: CategoryVerificationStatus = getCategoryVerificationStatus(policiesHasContent, formData.policies.isVerified);
+  const policiesStatus: CategoryLifecycleStatus = getCategoryVerificationStatus(
+    policiesHasContent, 
+    formData.policies.isVerified, 
+    formData.policies.isPublished
+  );
   const policiesDetails = getCategoryStatusDetails(policiesStatus);
 
   const contactsHasContent = Boolean(
     formData.contacts.receptionContact || formData.contacts.bookingContact || 
     formData.contacts.emergencyContact || formData.contacts.staffInstructions
   );
-  const contactsStatus: CategoryVerificationStatus = getCategoryVerificationStatus(contactsHasContent, formData.contacts.isVerified);
+  const contactsStatus: CategoryLifecycleStatus = getCategoryVerificationStatus(
+    contactsHasContent, 
+    formData.contacts.isVerified, 
+    formData.contacts.isPublished
+  );
   const contactsDetails = getCategoryStatusDetails(contactsStatus);
 
   const notesHasContent = Boolean(formData.customNotes.content.trim());
-  const notesStatus: CategoryVerificationStatus = getCategoryVerificationStatus(notesHasContent, formData.customNotes.isVerified);
+  const notesStatus: CategoryLifecycleStatus = getCategoryVerificationStatus(
+    notesHasContent, 
+    formData.customNotes.isVerified, 
+    formData.customNotes.isPublished
+  );
   const notesDetails = getCategoryStatusDetails(notesStatus);
 
   // Count verified sections
@@ -144,6 +204,17 @@ export const HotelManagementDashboard: React.FC<HotelManagementDashboardProps> =
     formData.contacts.isVerified && contactsHasContent,
     formData.customNotes.isVerified && notesHasContent,
   ].filter(Boolean).length;
+
+  const publishedCount = [
+    formData.profile.isVerified && formData.profile.isPublished && profileHasContent,
+    formData.roomsVerified && formData.roomsPublished && roomsHasContent,
+    formData.facilities.isVerified && formData.facilities.isPublished && facilitiesHasContent,
+    formData.policies.isVerified && formData.policies.isPublished && policiesHasContent,
+    formData.contacts.isVerified && formData.contacts.isPublished && contactsHasContent,
+    formData.customNotes.isVerified && formData.customNotes.isPublished && notesHasContent,
+  ].filter(Boolean).length;
+
+  const hasUnpublishedVerified = verifiedCount > publishedCount;
 
   // Edit Handlers with Re-verification Enforcement (Requirement 4)
   // When management modifies a category, it is marked as unverified (draft) until re-verified.
@@ -362,23 +433,57 @@ export const HotelManagementDashboard: React.FC<HotelManagementDashboardProps> =
             <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#08221a] border border-emerald-900/80 text-xs">
               <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
               <span className="text-stone-300">
-                Verified Categories: <strong className="text-amber-300">{verifiedCount} / {totalSections}</strong>
+                Verified: <strong className="text-blue-300">{verifiedCount} / {totalSections}</strong> &bull; Live Published: <strong className="text-emerald-400">{publishedCount} / {totalSections}</strong>
               </span>
             </div>
 
-            {/* Save All Button */}
+            {/* Save Button */}
             <button
               onClick={() => handleSaveAll()}
-              disabled={isSaving}
-              className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-stone-950 font-bold text-xs sm:text-sm flex items-center gap-2 shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer disabled:opacity-50"
+              disabled={isSaving || isPublishing}
+              className="px-3.5 py-2 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-200 font-bold text-xs sm:text-sm flex items-center gap-1.5 border border-stone-700 transition-all cursor-pointer disabled:opacity-50"
+              title="Save draft records"
             >
               {isSaving ? (
-                <RefreshCw className="w-4 h-4 animate-spin text-stone-950" />
+                <RefreshCw className="w-4 h-4 animate-spin text-amber-300" />
               ) : (
-                <Save className="w-4 h-4 text-stone-950" />
+                <Save className="w-4 h-4 text-amber-300" />
               )}
-              <span>{isSaving ? 'Saving...' : 'Save & Sync Records'}</span>
+              <span>{isSaving ? 'Saving...' : 'Save Drafts'}</span>
             </button>
+
+            {/* Publish Button */}
+            {onPublish && (
+              <button
+                id="publish-records-btn"
+                onClick={handlePublishAll}
+                disabled={isPublishing || isSaving || verifiedCount === 0}
+                className={`px-4 py-2 rounded-xl font-bold text-xs sm:text-sm flex items-center gap-2 shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer disabled:opacity-40 disabled:pointer-events-none ${
+                  hasUnpublishedVerified
+                    ? 'bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-stone-950 animate-pulse'
+                    : 'bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-stone-950'
+                }`}
+                title="Publish verified records to the live public AI Receptionist"
+              >
+                {isPublishing ? (
+                  <RefreshCw className="w-4 h-4 animate-spin text-stone-950" />
+                ) : (
+                  <CheckCircle2 className="w-4 h-4 text-stone-950" />
+                )}
+                <span>{isPublishing ? 'Publishing...' : 'Publish to Live AI'}</span>
+              </button>
+            )}
+
+            {/* Admin Logout Button */}
+            {onLogout && (
+              <button
+                onClick={onLogout}
+                className="p-2 rounded-xl bg-rose-950/60 hover:bg-rose-900 text-rose-300 hover:text-white border border-rose-800/80 transition-all text-xs font-semibold cursor-pointer"
+                title="Log out of Admin Portal"
+              >
+                <Lock className="w-4 h-4 text-rose-400" />
+              </button>
+            )}
           </div>
         </div>
 

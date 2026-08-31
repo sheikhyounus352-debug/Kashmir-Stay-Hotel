@@ -1,6 +1,20 @@
 // Type definitions for Kashmir Stay Hotel AI Receptionist & Hotel Management Dashboard
 
 export type CategoryVerificationStatus = 'not_configured' | 'unverified' | 'verified';
+export type CategoryLifecycleStatus = 'not_configured' | 'draft' | 'unverified' | 'verified' | 'published';
+
+export interface AdminUser {
+  id: string;
+  username: string;
+  role: 'admin';
+  name: string;
+}
+
+export interface AuthSession {
+  token: string;
+  user: AdminUser;
+  expiresAt?: string;
+}
 
 export interface SecurityAssertionResult {
   id: string;
@@ -54,6 +68,7 @@ export interface RoomEntry {
   availableFacilities: string;
   availabilityStatus: string;
   isVerified: boolean;
+  isPublished?: boolean;
   lastUpdated?: string;
 }
 
@@ -65,6 +80,7 @@ export interface HotelProfileData {
   checkInTime: string;
   checkOutTime: string;
   isVerified: boolean;
+  isPublished?: boolean;
   lastUpdated?: string;
 }
 
@@ -75,6 +91,7 @@ export interface FacilitiesData {
   specialServices: string;
   otherAmenities: string;
   isVerified: boolean;
+  isPublished?: boolean;
   lastUpdated?: string;
 }
 
@@ -86,6 +103,7 @@ export interface PoliciesData {
   petPolicy: string;
   otherPolicies: string;
   isVerified: boolean;
+  isPublished?: boolean;
   lastUpdated?: string;
 }
 
@@ -95,6 +113,7 @@ export interface StaffContactData {
   emergencyContact: string;
   staffInstructions: string;
   isVerified: boolean;
+  isPublished?: boolean;
   lastUpdated?: string;
 }
 
@@ -102,6 +121,7 @@ export interface HotelManagementData {
   profile: HotelProfileData;
   rooms: RoomEntry[];
   roomsVerified: boolean;
+  roomsPublished?: boolean;
   roomsLastUpdated?: string;
   facilities: FacilitiesData;
   policies: PoliciesData;
@@ -109,6 +129,7 @@ export interface HotelManagementData {
   customNotes: {
     content: string;
     isVerified: boolean;
+    isPublished?: boolean;
     lastUpdated?: string;
   };
   lastSaved?: string;
@@ -123,10 +144,12 @@ export const EMPTY_HOTEL_MANAGEMENT_DATA: HotelManagementData = {
     checkInTime: '',
     checkOutTime: '',
     isVerified: false,
+    isPublished: false,
     lastUpdated: '',
   },
   rooms: [],
   roomsVerified: false,
+  roomsPublished: false,
   roomsLastUpdated: '',
   facilities: {
     facilities: '',
@@ -135,6 +158,7 @@ export const EMPTY_HOTEL_MANAGEMENT_DATA: HotelManagementData = {
     specialServices: '',
     otherAmenities: '',
     isVerified: false,
+    isPublished: false,
     lastUpdated: '',
   },
   policies: {
@@ -145,6 +169,7 @@ export const EMPTY_HOTEL_MANAGEMENT_DATA: HotelManagementData = {
     petPolicy: '',
     otherPolicies: '',
     isVerified: false,
+    isPublished: false,
     lastUpdated: '',
   },
   contacts: {
@@ -153,11 +178,13 @@ export const EMPTY_HOTEL_MANAGEMENT_DATA: HotelManagementData = {
     emergencyContact: '',
     staffInstructions: '',
     isVerified: false,
+    isPublished: false,
     lastUpdated: '',
   },
   customNotes: {
     content: '',
     isVerified: false,
+    isPublished: false,
     lastUpdated: '',
   },
   lastSaved: '',
@@ -185,4 +212,5 @@ export const EMPTY_HOTEL_KNOWLEDGE: VerifiedHotelKnowledge = {
   additionalVerifiedNotes: '',
   lastUpdated: '',
 };
+
 
