@@ -29,8 +29,19 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!username.trim() || !password) {
-      setErrorMessage('Please enter both username and password.');
+    const cleanUser = username.trim();
+    const cleanPass = password;
+
+    if (!cleanUser && !cleanPass) {
+      setErrorMessage('Please enter your administrator username and password.');
+      return;
+    }
+    if (!cleanUser) {
+      setErrorMessage('Please enter your administrator username or email.');
+      return;
+    }
+    if (!cleanPass) {
+      setErrorMessage('Please enter your administrator password.');
       return;
     }
 
@@ -42,15 +53,15 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          username: username.trim(),
-          password: password,
+          username: cleanUser,
+          password: cleanPass,
         }),
       });
 
       const data = await response.json();
 
       if (!response.ok || !data.success) {
-        throw new Error(data.error || 'Invalid administrator credentials.');
+        throw new Error(data.error || 'Invalid Login Credentials');
       }
 
       const authSession: AuthSession = {
@@ -62,7 +73,7 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
       onLoginSuccess(authSession);
       onClose();
     } catch (err: any) {
-      setErrorMessage(err.message || 'Invalid administrator credentials.');
+      setErrorMessage(err.message || 'Invalid Login Credentials');
     } finally {
       setIsLoading(false);
     }
@@ -115,16 +126,19 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
 
           <div className="space-y-1.5">
             <label className="block text-xs font-bold text-stone-700 uppercase tracking-wider">
-              Administrator Username
+              Administrator Username / Email
             </label>
             <div className="relative">
               <input
                 id="admin-username-input"
                 type="text"
                 value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="Enter username"
-                required
+                onChange={(e) => {
+                  setUsername(e.target.value);
+                  if (errorMessage) setErrorMessage(null);
+                }}
+                placeholder="Enter username or email"
+                autoComplete="username"
                 className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-xs sm:text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-emerald-800 focus:border-transparent bg-stone-50/50 focus:bg-white"
               />
             </div>
@@ -139,9 +153,12 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
                 id="admin-password-input"
                 type="password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  if (errorMessage) setErrorMessage(null);
+                }}
                 placeholder="••••••••••••"
-                required
+                autoComplete="current-password"
                 className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-xs sm:text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-emerald-800 focus:border-transparent bg-stone-50/50 focus:bg-white"
               />
             </div>

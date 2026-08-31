@@ -90,8 +90,13 @@ export default function App() {
         });
         if (res.ok) {
           const data = await res.json();
-          if (data.authenticated && data.session) {
-            setAuthSession(data.session);
+          if (data.authenticated) {
+            const restoredSession: AuthSession = data.session || {
+              token: storedToken,
+              user: data.user,
+              expiresAt: data.expiresAt || (Date.now() + 24 * 60 * 60 * 1000),
+            };
+            setAuthSession(restoredSession);
           } else {
             localStorage.removeItem(AUTH_STORAGE_KEY);
           }

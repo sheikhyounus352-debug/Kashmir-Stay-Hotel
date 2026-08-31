@@ -39,30 +39,90 @@ interface AdminUser {
   role: 'admin';
 }
 
-function getAdminUsername(): string {
-  return (process.env.ADMIN_USERNAME || "admin").trim();
+function cleanEnvString(val?: string | null): string {
+  if (!val || typeof val !== 'string') return '';
+  let s = val.replace(/\r/g, '').trim();
+  // Strip surrounding quotes if user entered them in Render UI or .env e.g. "myPassword" or 'myPassword'
+  if ((s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'"))) {
+    s = s.slice(1, -1).replace(/\r/g, '').trim();
+  }
+  return s;
 }
 
-function verifyAdminCredentials(user: string, pass: string): boolean {
-  const configuredUsername = getAdminUsername();
-  const configuredPassword = process.env.ADMIN_PASSWORD ? process.env.ADMIN_PASSWORD.trim() : "";
+function getValidAdminUsernames(): string[] {
+  const list = new Set<string>();
+  const envUsername = cleanEnvString(process.env.ADMIN_USERNAME);
+  const envEmail = cleanEnvString(process.env.ADMIN_EMAIL);
+  const envUser = cleanEnvString(process.env.ADMIN_USER);
+  
+  if (envUsername) list.add(envUsername.toLowerCase());
+  if (envEmail) list.add(envEmail.toLowerCase());
+  if (envUser) list.add(envUser.toLowerCase());
+  
+  // Always include standard "admin" in valid usernames
+  list.add("admin");
+  
+  return Array.from(list);
+}
 
-  if (!configuredPassword || !user || !pass) {
-    return false;
+function getPrimaryAdminUsername(): string {
+  const configured = cleanEnvString(process.env.ADMIN_USERNAME || process.env.ADMIN_EMAIL || process.env.ADMIN_USER);
+  return configured || "admin";
+}
+
+function getAdminPassword(): string {
+  return cleanEnvString(process.env.ADMIN_PASSWORD || process.env.ADMIN_PASS || process.env.ADMIN_SECRET);
+}
+
+function verifyAdminCredentials(user: string, pass: string): { valid: boolean; reason?: string } {
+  const configuredPassword = getAdminPassword();
+
+  if (!configuredPassword) {
+    return { valid: false, reason: "ADMIN_PASSWORD_NOT_CONFIGURED" };
   }
 
-  const usernameMatch = user.trim().toLowerCase() === configuredUsername.toLowerCase();
-  
-  // Constant-time buffer comparison to prevent timing attacks
-  const passBuf = Buffer.from(pass.trim());
-  const envPassBuf = Buffer.from(configuredPassword);
-  
-  if (passBuf.length !== envPassBuf.length) {
-    return false;
+  if (!user || !pass) {
+    return { valid: false, reason: "MISSING_INPUT" };
   }
 
-  const passwordMatch = crypto.timingSafeEqual(passBuf, envPassBuf);
-  return usernameMatch && passwordMatch;
+  const validUsernames = getValidAdminUsernames();
+  const inputUser = user.trim().toLowerCase();
+  
+  const usernameMatch = validUsernames.some(u => u === inputUser);
+  if (!usernameMatch) {
+    return { valid: false, reason: "USERNAME_MISMATCH" };
+  }
+
+  // Safe password comparison
+  const rawEnvPass = process.env.ADMIN_PASSWORD || process.env.ADMIN_PASS || process.env.ADMIN_SECRET || "";
+  const cleanedEnvPass = configuredPassword;
+
+  const candidatePass = pass;
+  const candidatePassTrimmed = pass.trim();
+
+  // Test both exact and trimmed versions against raw and cleaned env pass
+  const isMatch = 
+    candidatePass === cleanedEnvPass ||
+    candidatePassTrimmed === cleanedEnvPass ||
+    candidatePass === rawEnvPass ||
+    candidatePassTrimmed === rawEnvPass.trim();
+
+  if (isMatch) {
+    return { valid: true };
+  }
+
+  // Safe timing comparison if lengths match
+  try {
+    const bufCandidate = Buffer.from(candidatePassTrimmed);
+    const bufCleaned = Buffer.from(cleanedEnvPass);
+    if (bufCandidate.length === bufCleaned.length && crypto.timingSafeEqual(bufCandidate, bufCleaned)) {
+      return { valid: true };
+    }
+  } catch {
+    // ignore
+  }
+
+  return { valid: false, reason: "PASSWORD_MISMATCH" };
 }
 
 // Active sessions memory store
@@ -465,17 +525,25 @@ app.post("/api/auth/login", (req, res) => {
     const { username, password } = req.body || {};
     if (!username || !password || typeof username !== "string" || typeof password !== "string") {
       return res.status(401).json({ 
-        error: "Invalid administrator credentials.",
+        error: "Invalid Login Credentials",
         code: "INVALID_CREDENTIALS",
         authenticated: false
       });
     }
 
-    const isValid = verifyAdminCredentials(username, password);
+    const { valid, reason } = verifyAdminCredentials(username, password);
 
-    if (!isValid) {
+    if (!valid) {
+      if (reason === "ADMIN_PASSWORD_NOT_CONFIGURED") {
+        console.error("[ADMIN AUTH REJECTED] ADMIN_PASSWORD environment variable is NOT configured on the server. Please add ADMIN_PASSWORD to Render environment variables.");
+      } else if (reason === "USERNAME_MISMATCH") {
+        console.warn(`[ADMIN AUTH REJECTED] Username mismatch. Expected: "${getPrimaryAdminUsername().toLowerCase()}", Received: "${username.trim().toLowerCase()}".`);
+      } else if (reason === "PASSWORD_MISMATCH") {
+        console.warn(`[ADMIN AUTH REJECTED] Password mismatch for username "${username.trim()}". Received length: ${password.length}, Expected length: ${getAdminPassword().length}.`);
+      }
+
       return res.status(401).json({ 
-        error: "Invalid administrator credentials.",
+        error: "Invalid Login Credentials",
         code: "INVALID_CREDENTIALS",
         authenticated: false
       });
@@ -483,12 +551,14 @@ app.post("/api/auth/login", (req, res) => {
 
     const adminUser: AdminUser = {
       id: "admin-1",
-      username: getAdminUsername(),
+      username: username.trim() || getPrimaryAdminUsername(),
       name: "Hotel General Manager",
       role: "admin",
     };
 
     const session = createAdminSession(adminUser);
+    console.log(`[ADMIN AUTH SUCCESS] Administrator session created for "${adminUser.username}".`);
+
     res.json({
       success: true,
       token: session.token,
@@ -501,6 +571,7 @@ app.post("/api/auth/login", (req, res) => {
       expiresAt: session.expiresAt,
     });
   } catch (err: any) {
+    console.error("[ADMIN AUTH ERROR]", err?.message || err);
     res.status(401).json({ 
       error: "Invalid administrator credentials.",
       code: "INVALID_CREDENTIALS",
@@ -526,8 +597,18 @@ app.get("/api/auth/session", (req, res) => {
   if (!session) {
     return res.json({ authenticated: false });
   }
+  const cleanToken = authHeader?.startsWith("Bearer ") ? authHeader.slice(7).trim() : authHeader?.trim() || session.token;
   return res.json({
     authenticated: true,
+    session: {
+      token: cleanToken,
+      user: {
+        id: session.userId,
+        username: session.username,
+        role: session.role,
+      },
+      expiresAt: session.expiresAt,
+    },
     user: {
       id: session.userId,
       username: session.username,
@@ -861,7 +942,7 @@ app.post("/api/security-tests/run", async (req, res) => {
     // ========================================================================
     const testAdminUser: AdminUser = {
       id: "admin-test",
-      username: getAdminUsername(),
+      username: getPrimaryAdminUsername(),
       name: "Hotel General Manager",
       role: "admin",
     };
@@ -1155,6 +1236,15 @@ async function startServer() {
 
   app.listen(PORT, "0.0.0.0", () => {
     console.log(`Kashmir Stay Hotel Server running on http://0.0.0.0:${PORT}`);
+    
+    const adminUser = getPrimaryAdminUsername();
+    const adminPass = getAdminPassword();
+    if (!adminPass) {
+      console.warn("\n⚠️  [ADMIN AUTH WARNING] 'ADMIN_PASSWORD' environment variable is NOT set.");
+      console.warn("👉 To enable Admin login, configure 'ADMIN_PASSWORD' in your server environment variables (e.g. Render Dashboard -> Environment) and redeploy.\n");
+    } else {
+      console.log(`🔒 [ADMIN AUTH] Configured with ADMIN_USERNAME="${adminUser}" and ADMIN_PASSWORD (${adminPass.length} characters).`);
+    }
   });
 }
 
