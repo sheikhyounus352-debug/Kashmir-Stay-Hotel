@@ -143,7 +143,7 @@ export const TravelAgentLoginModal: React.FC<TravelAgentLoginModalProps> = ({
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="e.g. agent1 or agent@kashmirstay.com"
+                placeholder="e.g. agency_username or agent@example.com"
                 autoComplete="username"
                 className="w-full pl-10 pr-3.5 py-2.5 bg-stone-50 border border-stone-300 focus:border-emerald-600 focus:bg-white focus:ring-2 focus:ring-emerald-600/20 rounded-xl text-sm text-stone-900 transition-all outline-hidden"
               />

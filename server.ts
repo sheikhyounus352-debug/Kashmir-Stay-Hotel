@@ -209,32 +209,7 @@ interface AgentSession {
 }
 
 // In-memory persistent stores for Travel Agents and Bookings
-const storedTravelAgents: StoredTravelAgent[] = [
-  {
-    id: "agent-chinar-1",
-    username: "agent1",
-    email: "agent@kashmirstay.com",
-    password: "agent123",
-    agencyName: "Chinar Kashmir Travels & Tours",
-    contactPerson: "Farooq Ahmed",
-    phone: "+91 94190 12345",
-    commissionPercentage: 10,
-    status: "active",
-    createdAt: "2026-08-30T10:00:00.000Z",
-  },
-  {
-    id: "agent-gulmarg-2",
-    username: "gulmarg_tours",
-    email: "booking@gulmargexpeditions.com",
-    password: "agent123",
-    agencyName: "Gulmarg Alpine Expeditions",
-    contactPerson: "Aasif Mir",
-    phone: "+91 94194 56789",
-    commissionPercentage: 12,
-    status: "active",
-    createdAt: "2026-08-30T11:30:00.000Z",
-  }
-];
+const storedTravelAgents: StoredTravelAgent[] = [];
 
 const activeAgentSessions = new Map<string, AgentSession>();
 let agentBookingsStore: AgentBookingRecord[] = [];
@@ -1967,11 +1942,24 @@ app.post("/api/security-tests/run", async (req, res) => {
     // ========================================================================
     // 12. TRAVEL AGENT AUTHENTICATION SEPARATION & ADMIN BOUNDARY
     // ========================================================================
-    const sampleAgent = storedTravelAgents[0];
-    const testAgentSession = sampleAgent ? createAgentSession(sampleAgent) : null;
+    const transientTestAgent: StoredTravelAgent = {
+      id: "sec-audit-agent-test",
+      username: "audit_sec_agent",
+      email: "audit_sec@test.local",
+      password: "sec_test_password",
+      agencyName: "Security Audit Agency",
+      contactPerson: "Sec Officer",
+      phone: "+91 90000 00000",
+      commissionPercentage: 10,
+      status: "active",
+      createdAt: new Date().toISOString(),
+    };
+    const testAgentSession = createAgentSession(transientTestAgent);
     // An agent token passed to admin token validator must be rejected
-    const agentTokenInAdminValidator = testAgentSession ? validateAdminToken(testAgentSession.token) : null;
+    const agentTokenInAdminValidator = validateAdminToken(testAgentSession.token);
     const boundaryPassed = Boolean(testAgentSession && agentTokenInAdminValidator === null);
+    // Clean up transient test session immediately
+    activeAgentSessions.delete(testAgentSession.token);
 
     results.push({
       id: 'test-agent-admin-boundary',
