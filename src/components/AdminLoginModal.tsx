@@ -103,15 +103,15 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
             </div>
             <div>
               <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 uppercase tracking-wider">
-                Restricted Admin Access
+                YUMORA Platform Admin
               </span>
               <h3 id="admin-login-title" className="text-lg font-serif-luxury font-bold text-white">
-                Hotel Manager Authentication
+                Platform Administrator Login
               </h3>
             </div>
           </div>
           <p className="text-xs text-emerald-200/90 leading-relaxed">
-            Only authorized hotel managers and administrators may access the Hotel Management Portal, edit records, or publish verified data.
+            Authorized platform administrators and hotel managers may log in to manage verified property profiles, rooms, policies, and travel agent partnerships.
           </p>
         </div>
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { 
   Send, 
   Mic, 
@@ -42,16 +42,20 @@ import { speakText, stopSpeech, getSpeechRecognition } from './utils/speech';
 const INITIAL_WELCOME_MESSAGE: ChatMessage = {
   id: 'welcome-msg-1',
   sender: 'receptionist',
-  text: `**Warm greetings and welcome!** 🌸
+  text: `**Welcome to YUMORA, an AI-powered hospitality platform.** 🌸
 
-I am your **AI Front Desk Receptionist**. I am here to assist you with questions regarding the hotel, rooms, services, dining, and policies based strictly on verified hotel records.
+I am your **AI Receptionist**. YUMORA powers intelligent reception and hotel-management services for participating hotels.
+
+*No verified hotel properties have been added yet. YUMORA is ready to onboard verified hospitality properties.*
 
 How may I assist you today?`,
-  timestamp: 'Front Desk • Live',
+  timestamp: 'YUMORA • Live',
 };
 
-const AUTH_STORAGE_KEY = 'kashmir_stay_admin_token';
-const AGENT_AUTH_STORAGE_KEY = 'kashmir_stay_agent_token';
+const AUTH_STORAGE_KEY = 'yumora_admin_token';
+const LEGACY_AUTH_STORAGE_KEY = 'kashmir_stay_admin_token';
+const AGENT_AUTH_STORAGE_KEY = 'yumora_agent_token';
+const LEGACY_AGENT_AUTH_STORAGE_KEY = 'kashmir_stay_agent_token';
 
 export default function App() {
   const [activeView, setActiveView] = useState<'receptionist' | 'management' | 'agent-portal'>('receptionist');
@@ -68,26 +72,61 @@ export default function App() {
   const [knowledge, setKnowledge] = useState<VerifiedHotelKnowledge>(EMPTY_HOTEL_KNOWLEDGE);
   const [managementData, setManagementData] = useState<HotelManagementData>(EMPTY_HOTEL_MANAGEMENT_DATA);
 
+  const chatContainerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const recognitionRef = useRef<any>(null);
 
-  // Auto-scroll to latest message
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  // Pin chat window strictly to the bottom of the conversation
+  const pinChatToBottom = (behavior: ScrollBehavior = 'auto') => {
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior, block: 'end' });
+    }
   };
 
-  useEffect(() => {
+  // Layout Effect: Fires synchronously before paint to ensure the chat window
+  // stays firmly pinned to the bottom when new messages arrive or loading states change,
+  // even if the user has scrolled up to read previous messages.
+  useLayoutEffect(() => {
     if (activeView === 'receptionist') {
-      scrollToBottom();
+      pinChatToBottom('auto');
+      // Execute in next animation frame to compensate for multi-line markdown/rich card layout changes
+      const rafId = requestAnimationFrame(() => {
+        pinChatToBottom('auto');
+      });
+      return () => cancelAnimationFrame(rafId);
     }
   }, [messages, isLoading, activeView]);
+
+  // Intersection Observer: Observes the bottom sentinel to reinforce bottom pinning
+  useEffect(() => {
+    if (activeView !== 'receptionist' || !messagesEndRef.current || !chatContainerRef.current) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        if (!entry.isIntersecting && isLoading) {
+          pinChatToBottom('auto');
+        }
+      },
+      {
+        root: chatContainerRef.current,
+        threshold: 0.1,
+      }
+    );
+
+    observer.observe(messagesEndRef.current);
+    return () => observer.disconnect();
+  }, [activeView, messages.length, isLoading]);
 
   // Check stored session tokens on startup
   useEffect(() => {
     async function restoreSessions() {
       // 1. Restore Admin Token
-      const storedToken = localStorage.getItem(AUTH_STORAGE_KEY);
+      const storedToken = localStorage.getItem(AUTH_STORAGE_KEY) || localStorage.getItem(LEGACY_AUTH_STORAGE_KEY);
       if (storedToken) {
         try {
           const res = await fetch('/api/auth/session', {
@@ -104,11 +143,14 @@ export default function App() {
                 expiresAt: data.expiresAt || (Date.now() + 24 * 60 * 60 * 1000),
               };
               setAuthSession(restoredSession);
+              localStorage.setItem(AUTH_STORAGE_KEY, storedToken);
             } else {
               localStorage.removeItem(AUTH_STORAGE_KEY);
+              localStorage.removeItem(LEGACY_AUTH_STORAGE_KEY);
             }
           } else {
             localStorage.removeItem(AUTH_STORAGE_KEY);
+            localStorage.removeItem(LEGACY_AUTH_STORAGE_KEY);
           }
         } catch (err) {
           console.warn('Failed to verify admin session token:', err);
@@ -116,7 +158,7 @@ export default function App() {
       }
 
       // 2. Restore Agent Token
-      const storedAgentToken = localStorage.getItem(AGENT_AUTH_STORAGE_KEY);
+      const storedAgentToken = localStorage.getItem(AGENT_AUTH_STORAGE_KEY) || localStorage.getItem(LEGACY_AGENT_AUTH_STORAGE_KEY);
       if (storedAgentToken) {
         try {
           const res = await fetch('/api/agent/session', {
@@ -128,11 +170,14 @@ export default function App() {
             const data = await res.json();
             if (data.authenticated && data.session) {
               setAgentSession(data.session);
+              localStorage.setItem(AGENT_AUTH_STORAGE_KEY, storedAgentToken);
             } else {
               localStorage.removeItem(AGENT_AUTH_STORAGE_KEY);
+              localStorage.removeItem(LEGACY_AGENT_AUTH_STORAGE_KEY);
             }
           } else {
             localStorage.removeItem(AGENT_AUTH_STORAGE_KEY);
+            localStorage.removeItem(LEGACY_AGENT_AUTH_STORAGE_KEY);
           }
         } catch (err) {
           console.warn('Failed to verify agent session token:', err);
@@ -252,6 +297,7 @@ export default function App() {
     } finally {
       setAuthSession(null);
       localStorage.removeItem(AUTH_STORAGE_KEY);
+      localStorage.removeItem(LEGACY_AUTH_STORAGE_KEY);
       setActiveView('receptionist');
     }
   };
@@ -280,6 +326,7 @@ export default function App() {
     } finally {
       setAgentSession(null);
       localStorage.removeItem(AGENT_AUTH_STORAGE_KEY);
+      localStorage.removeItem(LEGACY_AGENT_AUTH_STORAGE_KEY);
       setActiveView('receptionist');
     }
   };
@@ -536,17 +583,17 @@ export default function App() {
             <div className="space-y-1">
               <div className="flex items-center gap-2">
                 <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-900 text-emerald-300 border border-emerald-700 uppercase tracking-wider">
-                  Official Front Desk
+                  AI Hospitality Platform
                 </span>
                 <span className="text-xs text-emerald-300/80">• Strict Grounding Active</span>
               </div>
               <h2 className="text-lg sm:text-xl md:text-2xl font-serif-luxury font-bold text-white">
-                Kashmir Stay Hotel • AI Receptionist
+                YUMORA • AI Receptionist
               </h2>
               <p className="text-xs sm:text-sm text-stone-300 max-w-2xl leading-relaxed">
                 {hasVerifiedKnowledge
-                  ? "The AI Receptionist is answering guest inquiries strictly using your saved verified hotel records."
-                  : "No hotel information has been added yet. Use the Hotel Management portal to configure official profile, rooms, and policies."}
+                  ? "The AI Receptionist is answering guest inquiries strictly using your saved and verified hotel records."
+                  : "No verified hotel properties have been added yet. YUMORA is ready to onboard verified hospitality properties."}
               </p>
             </div>
 
@@ -601,7 +648,11 @@ export default function App() {
           </div>
 
           {/* Chat Stream Window */}
-          <div className="flex-1 bg-stone-100/70 rounded-2xl border border-stone-200 shadow-inner p-3 sm:p-5 overflow-y-auto flex flex-col min-h-[420px] max-h-[620px]">
+          <div 
+            id="chat-messages-container"
+            ref={chatContainerRef}
+            className="flex-1 bg-stone-100/70 rounded-2xl border border-stone-200 shadow-inner p-3 sm:p-5 overflow-y-auto flex flex-col min-h-[420px] max-h-[620px]"
+          >
             <div className="flex-1 space-y-1">
               {messages.map((message) => (
                 <ChatMessageBubble 
@@ -627,7 +678,7 @@ export default function App() {
                 </div>
               )}
 
-              <div ref={messagesEndRef} />
+              <div id="messages-bottom-sentinel" ref={messagesEndRef} />
             </div>
           </div>
 
@@ -710,13 +761,17 @@ export default function App() {
             </div>
           </div>
 
-          {/* Footer */}
-          <footer className="mt-2 text-center text-xs text-stone-500 space-y-1 pb-4">
-            <p className="font-semibold text-stone-700">
-              Kashmir Stay Hotel • AI Receptionist
-            </p>
-            <p className="text-[11px] text-stone-500">
-              Only hotel information explicitly entered and published by hotel management is used to answer guest inquiries.
+          {/* Professional Footer */}
+          <footer className="mt-6 text-center text-xs text-stone-500 space-y-2 pb-6 border-t border-stone-200/60 pt-4">
+            <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs">
+              <span className="font-bold text-stone-800 tracking-wide">YUMORA</span>
+              <span className="text-stone-300">•</span>
+              <span className="text-stone-600 font-medium">AI Hospitality & Hotel Management Platform</span>
+              <span className="text-stone-300">•</span>
+              <span className="text-emerald-700 font-semibold">Built & Owned by Sheikh Younus</span>
+            </div>
+            <p className="text-[11px] text-stone-400">
+              Smart Reception. Better Hotel Operations. Only hotel records explicitly entered and verified by property administrators are communicated.
             </p>
           </footer>
         </main>

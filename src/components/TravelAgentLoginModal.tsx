@@ -105,10 +105,10 @@ export const TravelAgentLoginModal: React.FC<TravelAgentLoginModalProps> = ({
             </div>
             <div>
               <h2 id="agent-login-title" className="text-xl font-bold font-serif tracking-wide text-white">
-                Travel Agent Portal
+                YUMORA B2B Partner Portal
               </h2>
               <p className="text-xs text-emerald-200">
-                Partner Booking & Commission Management
+                Travel Agent Booking & Commission Management
               </p>
             </div>
           </div>

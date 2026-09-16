@@ -148,15 +148,15 @@ export const Navbar: React.FC<NavbarProps> = ({
           <div>
             <div className="flex items-center gap-2">
               <h1 className="font-crest text-lg sm:text-xl font-bold tracking-wider text-stone-50">
-                KASHMIR STAY HOTEL
+                YUMORA
               </h1>
               <span className="hidden sm:inline-block px-2 py-0.5 text-[10px] tracking-wider uppercase font-semibold bg-emerald-900/80 text-emerald-300 border border-emerald-700/60 rounded-full">
-                Front Desk & B2B
+                AI Hospitality Platform
               </span>
             </div>
             <div className="flex items-center gap-2 text-xs text-emerald-300/90 font-medium">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-              <span>24/7 AI Reception, Travel Agent Portal & Management</span>
+              <span>Smart Reception. Better Hotel Operations.</span>
             </div>
           </div>
         </div>

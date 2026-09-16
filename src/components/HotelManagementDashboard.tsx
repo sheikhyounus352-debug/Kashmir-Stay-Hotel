@@ -418,14 +418,14 @@ export const HotelManagementDashboard: React.FC<HotelManagementDashboardProps> =
             <div>
               <div className="flex items-center gap-2">
                 <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 uppercase tracking-wider">
-                  Hotel Management
+                  YUMORA Platform Admin
                 </span>
                 <span className="text-xs text-emerald-300/80 hidden md:inline">
-                  • Verified Information Dashboard
+                  • Hotel Management & Property Grounding
                 </span>
               </div>
               <h1 className="text-base sm:text-lg font-serif-luxury font-bold text-white leading-tight">
-                Kashmir Stay Hotel • Verification Portal
+                YUMORA • Hotel Management Dashboard
               </h1>
             </div>
           </div>
@@ -701,6 +701,25 @@ export const HotelManagementDashboard: React.FC<HotelManagementDashboardProps> =
               Fill in each category as your real hotel facts become available. Toggle the <strong>"Mark as Verified"</strong> switch on each section when you are ready for the AI Receptionist to use it.
             </p>
           </div>
+
+          {/* Platform Identity & Owner Attribution */}
+          <div className="bg-stone-900 text-stone-200 rounded-2xl p-4 border border-stone-800 space-y-2.5 text-xs shadow-sm">
+            <div className="flex items-center gap-2 text-amber-400 font-bold">
+              <Compass className="w-4 h-4 text-amber-400" />
+              <span>YUMORA</span>
+            </div>
+            <p className="text-[11px] text-stone-300 font-medium leading-relaxed">
+              AI Hospitality & Hotel Management Platform
+            </p>
+            <div className="pt-2 border-t border-stone-800">
+              <p className="text-[11px] font-semibold text-emerald-300">
+                Built & Owned by Sheikh Younus
+              </p>
+              <p className="text-[10px] text-stone-400 mt-0.5">
+                Smart Reception. Better Hotel Operations.
+              </p>
+            </div>
+          </div>
         </aside>
 
         {/* Right Content Area */}
@@ -775,7 +794,7 @@ export const HotelManagementDashboard: React.FC<HotelManagementDashboardProps> =
                     type="text"
                     value={formData.profile.hotelName}
                     onChange={(e) => handleUpdateProfile('hotelName', e.target.value)}
-                    placeholder="e.g., Kashmir Stay Hotel"
+                    placeholder="e.g., Grand Horizon Hotel & Suites"
                     className="w-full text-xs sm:text-sm p-3 rounded-xl border border-stone-200 focus:ring-2 focus:ring-emerald-800 focus:outline-none bg-stone-50/50"
                   />
                 </div>
@@ -789,7 +808,7 @@ export const HotelManagementDashboard: React.FC<HotelManagementDashboardProps> =
                     rows={2}
                     value={formData.profile.address}
                     onChange={(e) => handleUpdateProfile('address', e.target.value)}
-                    placeholder="e.g., Boulevard Road, Dal Lake, Srinagar, Jammu & Kashmir 190001"
+                    placeholder="e.g., 142 Oceanfront Boulevard, City Center, 10001"
                     className="w-full text-xs sm:text-sm p-3 rounded-xl border border-stone-200 focus:ring-2 focus:ring-emerald-800 focus:outline-none bg-stone-50/50"
                   />
                 </div>
@@ -811,7 +830,7 @@ export const HotelManagementDashboard: React.FC<HotelManagementDashboardProps> =
                     type="email"
                     value={formData.profile.email}
                     onChange={(e) => handleUpdateProfile('email', e.target.value)}
-                    placeholder="e.g., reservations@kashmirstayhotel.com"
+                    placeholder="e.g., reservations@hotelpartner.com"
                     className="w-full text-xs sm:text-sm p-3 rounded-xl border border-stone-200 focus:ring-2 focus:ring-emerald-800 focus:outline-none bg-stone-50/50"
                   />
                 </div>
@@ -1183,7 +1202,7 @@ export const HotelManagementDashboard: React.FC<HotelManagementDashboardProps> =
                     rows={3}
                     value={formData.facilities.diningServices}
                     onChange={(e) => handleUpdateFacilities('diningServices', e.target.value)}
-                    placeholder="e.g., In-house restaurant serving authentic Kashmiri Wazwan, Indian, and Continental cuisines. Breakfast buffet from 7:30 AM to 10:30 AM. Room service available until 10:30 PM."
+                    placeholder="e.g., In-house restaurant serving gourmet cuisines and breakfast buffet from 7:00 AM to 10:30 AM. 24/7 in-room dining available."
                     className="w-full text-xs sm:text-sm p-3 rounded-xl border border-stone-200 focus:ring-2 focus:ring-emerald-800 focus:outline-none bg-stone-50/50"
                   />
                 </div>
@@ -1197,7 +1216,7 @@ export const HotelManagementDashboard: React.FC<HotelManagementDashboardProps> =
                     rows={2}
                     value={formData.facilities.transportServices}
                     onChange={(e) => handleUpdateFacilities('transportServices', e.target.value)}
-                    placeholder="e.g., Srinagar International Airport pickup/drop assistance on advance request, local sightseeing car rentals to Gulmarg, Pahalgam, and Sonamarg."
+                    placeholder="e.g., Airport transfer shuttle assistance on advance request, city sightseeing and private executive car rentals."
                     className="w-full text-xs sm:text-sm p-3 rounded-xl border border-stone-200 focus:ring-2 focus:ring-emerald-800 focus:outline-none bg-stone-50/50"
                   />
                 </div>
@@ -1211,7 +1230,7 @@ export const HotelManagementDashboard: React.FC<HotelManagementDashboardProps> =
                     rows={2}
                     value={formData.facilities.specialServices}
                     onChange={(e) => handleUpdateFacilities('specialServices', e.target.value)}
-                    placeholder="e.g., Daily housekeeping, laundry service (same-day on request), doctor on call, electric kettle with complimentary Kashmiri Kahwa tea setup."
+                    placeholder="e.g., Daily housekeeping, laundry service (same-day on request), doctor on call, electric kettle with complimentary premium tea & coffee setup."
                     className="w-full text-xs sm:text-sm p-3 rounded-xl border border-stone-200 focus:ring-2 focus:ring-emerald-800 focus:outline-none bg-stone-50/50"
                   />
                 </div>
@@ -1475,7 +1494,7 @@ export const HotelManagementDashboard: React.FC<HotelManagementDashboardProps> =
                     type="text"
                     value={formData.contacts.bookingContact}
                     onChange={(e) => handleUpdateContacts('bookingContact', e.target.value)}
-                    placeholder="e.g., reservations@kashmirstayhotel.com, WhatsApp: +91 7006XXXXXX (9 AM - 8 PM)"
+                    placeholder="e.g., reservations@hotelpartner.com, WhatsApp: +1 555 019 2834 (9 AM - 8 PM)"
                     className="w-full text-xs sm:text-sm p-3 rounded-xl border border-stone-200 focus:ring-2 focus:ring-emerald-800 focus:outline-none bg-stone-50/50"
                   />
                 </div>

@@ -132,7 +132,7 @@ export const VerifiedKnowledgeModal: React.FC<VerifiedKnowledgeModalProps> = ({
               rows={3}
               value={formData.generalInfo}
               onChange={(e) => setFormData({ ...formData, generalInfo: e.target.value })}
-              placeholder="e.g. Kashmir Stay Hotel is located on... (Leave blank if not yet available)"
+              placeholder="e.g. The hotel property is located on... (Leave blank if not yet available)"
               className="w-full text-xs sm:text-sm p-3 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-emerald-800 bg-stone-50/50 focus:bg-white resize-y"
             />
           </div>

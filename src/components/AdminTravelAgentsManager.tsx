@@ -480,7 +480,7 @@ export const AdminTravelAgentsManager: React.FC<AdminTravelAgentsManagerProps> =
                     required
                     value={formAgencyName}
                     onChange={(e) => setFormAgencyName(e.target.value)}
-                    placeholder="e.g. Kashmir Alpine Tours"
+                    placeholder="e.g. Horizon Travel & Expeditions"
                     className="w-full px-3.5 py-2 bg-stone-50 border border-stone-300 rounded-xl text-xs sm:text-sm focus:bg-white focus:border-emerald-600 outline-hidden"
                   />
                 </div>
@@ -490,7 +490,7 @@ export const AdminTravelAgentsManager: React.FC<AdminTravelAgentsManagerProps> =
                     type="text"
                     value={formContactPerson}
                     onChange={(e) => setFormContactPerson(e.target.value)}
-                    placeholder="e.g. Farooq Ahmad"
+                    placeholder="e.g. Sarah Jenkins"
                     className="w-full px-3.5 py-2 bg-stone-50 border border-stone-300 rounded-xl text-xs sm:text-sm focus:bg-white focus:border-emerald-600 outline-hidden"
                   />
                 </div>
@@ -514,7 +514,7 @@ export const AdminTravelAgentsManager: React.FC<AdminTravelAgentsManagerProps> =
                     type="tel"
                     value={formPhone}
                     onChange={(e) => setFormPhone(e.target.value)}
-                    placeholder="e.g. +91 94190 12345"
+                    placeholder="e.g. +1 555 234 5678"
                     className="w-full px-3.5 py-2 bg-stone-50 border border-stone-300 rounded-xl text-xs sm:text-sm focus:bg-white focus:border-emerald-600 outline-hidden"
                   />
                 </div>
@@ -531,7 +531,7 @@ export const AdminTravelAgentsManager: React.FC<AdminTravelAgentsManagerProps> =
                     disabled={Boolean(editingAgent)}
                     value={formUsername}
                     onChange={(e) => setFormUsername(e.target.value)}
-                    placeholder="e.g. agent_kashmir"
+                    placeholder="e.g. agent_horizon"
                     className="w-full px-3.5 py-2 bg-stone-50 border border-stone-300 rounded-xl text-xs sm:text-sm focus:bg-white focus:border-emerald-600 outline-hidden disabled:opacity-60"
                   />
                 </div>

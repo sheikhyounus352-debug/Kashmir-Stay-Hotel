@@ -40,7 +40,7 @@ export const BookingInquiryCard: React.FC<BookingInquiryCardProps> = ({
               Booking Inquiry Summary
             </h4>
             <span className="text-[10px] text-amber-300 font-medium">
-              Kashmir Stay Hotel • Front Desk Inquiry
+              YUMORA • Reception Inquiry
             </span>
           </div>
         </div>

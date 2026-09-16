@@ -505,9 +505,9 @@ export const TravelAgentPortal: React.FC<TravelAgentPortalProps> = ({
             ) : hotels.length === 0 ? (
               <div className="p-12 text-center bg-white rounded-2xl border border-stone-200 shadow-xs">
                 <Building2 className="w-12 h-12 text-stone-400 mx-auto mb-3" />
-                <h3 className="text-base font-bold text-stone-800">No Verified Hotel Available</h3>
+                <h3 className="text-base font-bold text-stone-800">No verified hotel properties have been added yet.</h3>
                 <p className="text-xs text-stone-600 max-w-md mx-auto mt-1">
-                  Under strict zero-assumption policy, only hotels that have been officially verified and published by the administrator are shown. Please contact hotel administration.
+                  YUMORA is ready to onboard verified hospitality properties. Under strict zero-assumption policy, only properties with verified and published records appear in the B2B portal.
                 </p>
               </div>
             ) : (

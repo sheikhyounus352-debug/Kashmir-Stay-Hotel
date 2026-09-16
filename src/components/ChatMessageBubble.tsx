@@ -130,7 +130,7 @@ export const ChatMessageBubble: React.FC<ChatMessageBubbleProps> = ({
           >
             <div className="flex items-center gap-2">
               <span className="font-semibold tracking-wide">
-                {isReceptionist ? 'AI Receptionist • Kashmir Stay Hotel' : 'Customer'}
+                {isReceptionist ? 'YUMORA • AI Receptionist' : 'Customer'}
               </span>
               {isReceptionist && !message.isError && (
                 <span className="hidden sm:inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 font-medium">

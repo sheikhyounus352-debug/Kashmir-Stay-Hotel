@@ -1,4 +1,4 @@
-// Type definitions for Kashmir Stay Hotel AI Receptionist & Hotel Management Dashboard
+// Type definitions for YUMORA – AI Hospitality & Hotel Management Platform
 
 export type CategoryVerificationStatus = 'not_configured' | 'unverified' | 'verified';
 export type CategoryLifecycleStatus = 'not_configured' | 'draft' | 'unverified' | 'verified' | 'published';

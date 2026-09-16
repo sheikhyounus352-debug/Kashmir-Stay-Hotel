@@ -310,10 +310,19 @@ function getGenAI(): GoogleGenAI | null {
 function buildSystemInstruction(knowledge: VerifiedHotelKnowledge): string {
   const verifiedKnowledgeText = compileKnowledgePrompt(knowledge);
   const m = getHotelManagementData();
-  const hotelName = m.profile.isVerified && m.profile.hotelName?.trim() ? m.profile.hotelName.trim() : "the hotel";
+  const hasConfiguredHotel = m.profile.isVerified && Boolean(m.profile.hotelName?.trim());
+  const hotelName = hasConfiguredHotel ? m.profile.hotelName.trim() : null;
   const hasContactData = Boolean(knowledge.contactDetails && knowledge.contactDetails.trim());
 
-  return `You are the official AI Receptionist for ${hotelName === "the hotel" ? "the hotel" : `"${hotelName}"`}.
+  return `You are the official AI Receptionist powered by YUMORA (AI Hospitality & Hotel Management Platform).
+
+PRODUCT POSITIONING & IDENTITY MANDATE:
+- YUMORA is NOT a physical hotel property. YUMORA is an AI hospitality and hotel-management technology platform.
+- You must NOT pretend that YUMORA itself is a hotel.
+- You power intelligent AI reception and hotel-management services for participating hotels and hospitality properties.
+${hotelName 
+  ? `- You are currently assisting guests for the verified property "${hotelName}".`
+  : `- No verified hotel properties have been added yet. YUMORA is ready to onboard verified hospitality properties. If asked about hotel details, explain that you are part of YUMORA, an AI hospitality platform, and no verified hotel information is currently available.`}
 
 CORE DIRECTIVES & OPERATIONAL RULES:
 
@@ -527,9 +536,14 @@ function getDeterministicFallbackResponse(
     /^(hi|hello|hey)[,\s]+(good\s*(morning|afternoon|evening|day)|there|how\s*are\s*you)[\s!.,?]*$/i.test(trimmed) ||
     /^(good\s*(morning|afternoon|evening|day))[,\s]+(everyone|reception|team)[\s!.,?]*$/i.test(trimmed)
   ) {
-    const welcomeTarget = hotelDisplayName === "the hotel" ? "" : ` to ${hotelDisplayName}`;
+    if (m.profile.isVerified && m.profile.hotelName?.trim()) {
+      return {
+        text: `Welcome to YUMORA, an AI-powered hospitality platform! 🌸\n\nI am your AI Receptionist assisting guests for **${m.profile.hotelName.trim()}**. How may I assist you today? Please feel free to ask about our verified accommodations, facilities, dining, or policies.`,
+        status: 'greeting',
+      };
+    }
     return {
-      text: `Warm greetings and welcome${welcomeTarget}! 🌸 How may I assist you today? Please feel free to ask any question regarding our hotel.`,
+      text: "Welcome to YUMORA, an AI-powered hospitality platform.\n\nI am your AI Receptionist. YUMORA powers intelligent reception and hotel-management services for participating hotels.\n\nNo verified hotel properties have been added yet. YUMORA is ready to onboard verified hospitality properties. How may I assist you today?",
       status: 'greeting',
     };
   }
@@ -886,7 +900,7 @@ app.get("/api/agent/hotels", requireAgentAuth, (req, res) => {
       });
 
     const verifiedHotel = {
-      id: "hotel-kashmir-main",
+      id: "hotel-property-main",
       hotelName: mgmt.profile.hotelName.trim(),
       address: mgmt.profile.address || "",
       phone: mgmt.profile.phone || "",
@@ -1024,7 +1038,7 @@ app.post("/api/agent/bookings", requireAgentAuth, (req, res) => {
     const mgmt = getHotelManagementData();
     const verifiedRoom = mgmt.rooms.find((r) => r.id === roomId || r.roomType === roomType);
     
-    let verifiedHotelName = mgmt.profile.hotelName?.trim() || hotelName || "Kashmir Stay Hotel";
+    let verifiedHotelName = mgmt.profile.hotelName?.trim() || hotelName || "Verified Hotel Partner";
     let verifiedRoomType = verifiedRoom?.roomType || roomType || "Deluxe Suite";
     let roomRate = 0;
 
@@ -1044,14 +1058,14 @@ app.post("/api/agent/bookings", requireAgentAuth, (req, res) => {
 
     const dateSlug = new Date().toISOString().slice(0, 10).replace(/-/g, "");
     const randomSuffix = Math.floor(1000 + Math.random() * 9000);
-    const bookingReference = `KSB-${dateSlug}-${randomSuffix}`;
+    const bookingReference = `YMR-${dateSlug}-${randomSuffix}`;
 
     const newBooking: AgentBookingRecord = {
       bookingReference,
       agentId: currentAgent.id,
       agentName: currentAgent.contactPerson || currentAgent.username,
       agencyName: currentAgent.agencyName,
-      hotelId: hotelId || "hotel-kashmir-main",
+      hotelId: hotelId || "hotel-property-main",
       hotelName: verifiedHotelName,
       roomId: roomId || verifiedRoom?.id || `room-${Date.now()}`,
       roomType: verifiedRoomType,
@@ -1445,9 +1459,15 @@ app.post("/api/chat", async (req, res) => {
     // If greeting and no info yet, give a polite greeting without failing
     if (isSimpleGreeting && !hasAnyKnowledge) {
       const mgmt = getHotelManagementData();
-      const welcomeTarget = mgmt.profile.isVerified && mgmt.profile.hotelName?.trim() ? ` to ${mgmt.profile.hotelName.trim()}` : "";
+      if (mgmt.profile.isVerified && mgmt.profile.hotelName?.trim()) {
+        return res.json({
+          text: `Welcome to YUMORA, an AI-powered hospitality platform! 🌸\n\nI am your AI Receptionist assisting guests for **${mgmt.profile.hotelName.trim()}**. How may I assist you today? Please feel free to ask about verified accommodations, dining, facilities, or policies.`,
+          timestamp: new Date().toISOString(),
+          groundingStatus: 'greeting',
+        });
+      }
       return res.json({
-        text: `Warm greetings and welcome${welcomeTarget}! 🌸 How may I assist you today? Please feel free to ask any question once our verified hotel records have been updated.`,
+        text: "Welcome to YUMORA, an AI-powered hospitality platform.\n\nI am your AI Receptionist. YUMORA powers intelligent reception and hotel-management services for participating hotels.\n\nNo verified hotel properties have been added yet. YUMORA is ready to onboard verified hospitality properties. How may I assist you today?",
         timestamp: new Date().toISOString(),
         groundingStatus: 'greeting',
       });
@@ -2030,7 +2050,7 @@ async function startServer() {
   }
 
   app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Kashmir Stay Hotel Server running on http://0.0.0.0:${PORT}`);
+    console.log(`YUMORA Platform Server running on http://0.0.0.0:${PORT}`);
     
     const adminUser = getPrimaryAdminUsername();
     const adminPass = getAdminPassword();
